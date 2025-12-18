@@ -399,6 +399,10 @@ def background_monitor():
                 for signal in signals:
                     price, sl, tp = calculate_sl_tp(df, signal['type'])
                     
+                    atr_value = float(df['ATR'].iloc[-1]) if pd.notna(df['ATR'].iloc[-1]) else 0
+                    rsi_value = float(df['RSI'].iloc[-1]) if pd.notna(df['RSI'].iloc[-1]) else 50
+                    macd_hist = float(df['MACD'].iloc[-1] - df['MACD_Signal'].iloc[-1]) if pd.notna(df['MACD'].iloc[-1]) else 0
+                    
                     alert = {
                         'symbol': symbol,
                         'type': signal['type'],
@@ -409,6 +413,9 @@ def background_monitor():
                         'stopLoss': sl,
                         'takeProfit': tp,
                         'time': datetime.now().strftime('%H:%M:%S'),
+                        'atr': atr_value,
+                        'rsi': rsi_value,
+                        'macd_hist': macd_hist
                     }
                     
                     print(f"\n🚨 ALERTA: {signal['type']} en {symbol}")
@@ -416,9 +423,6 @@ def background_monitor():
                     print(f"   Precio: {price:.5f} | SL: {sl:.5f} | TP: {tp:.5f}")
                     
                     # Enviar notificación a Telegram
-                    atr_value = float(df['ATR'].iloc[-1]) if pd.notna(df['ATR'].iloc[-1]) else 0
-                    rsi_value = float(df['RSI'].iloc[-1]) if pd.notna(df['RSI'].iloc[-1]) else 50
-                    macd_hist = float(df['MACD'].iloc[-1] - df['MACD_Signal'].iloc[-1]) if pd.notna(df['MACD'].iloc[-1]) else 0
                     send_telegram_alert(
                         symbol=symbol,
                         signal_type=signal['type'],
