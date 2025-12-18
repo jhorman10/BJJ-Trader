@@ -1,18 +1,10 @@
 # ===========================================
 # CONFIGURACIÓN DE RENDER
 # ===========================================
-# Este archivo configura el despliegue automático en Render
-
-# Added version 1 to ensure schema compliance for staticSites
-type: blueprint
-version: "1"
-
 services:
-  # -------------------------------------
   # 1. Backend Service (Flask API)
-  # -------------------------------------
-  - type: web
-    name: bjj-trader-api
+  - name: bjj-trader-api
+    type: web
     env: python
     region: oregon
     plan: free
@@ -28,16 +20,13 @@ services:
       - key: PYTHON_VERSION
         value: "3.11"
 
-# -------------------------------------
-# 2. Frontend Service (React Static Site)
-# -------------------------------------
-staticSites:
+  # 2. Frontend Service (React Static Site)
   - name: bjj-trader
+    type: static
     region: oregon
     plan: free
-    rootDir: frontend
     buildCommand: npm install && npm run build
-    publishPath: ./dist
+    staticPublishPath: ./dist
     routes:
       - type: rewrite
         source: /socket.io/*
