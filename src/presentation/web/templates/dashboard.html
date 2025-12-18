@@ -464,41 +464,55 @@
         const container = document.getElementById('alertsList');
         const isBuy = alert.type === 'COMPRA';
         
+        // Calculate R/R Ratio
+        const risk = Math.abs(alert.price - alert.stopLoss);
+        const reward = Math.abs(alert.takeProfit - alert.price);
+        const rrRatio = risk > 0 ? (reward / risk).toFixed(2) : '0.00';
+
         const html = `
           <div class="alert-item card p-2 mb-2 ${isBuy ? 'buy' : 'sell'}" id="${id}">
-            <div class="d-flex justify-content-between align-items-center mb-1">
+            <!-- HEADER -->
+            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom border-secondary border-opacity-10 pb-1">
               <div>
-                <span class="badge ${isBuy ? 'bg-success' : 'bg-danger'} bg-opacity-75 me-1">${isBuy ? 'COMPRA' : 'VENTA'}</span>
-                ${alert.strength ? `<span class="badge bg-secondary bg-opacity-50" style="font-size: 0.65rem;">${alert.strength}</span>` : ''}
+                <span class="badge ${isBuy ? 'bg-success' : 'bg-danger'} bg-opacity-75 me-1">
+                  ${isBuy ? '🟢' : '🔴'} SEÑAL DE ${alert.type}
+                </span>
+                <span class="fw-bold">${alert.symbol.replace('=X','')}</span>
               </div>
-              <small class="text-secondary" style="font-size: 0.7rem;">${alert.time}</small>
+              ${alert.expiration ? 
+              `<span class="badge bg-warning text-dark border border-warning" style="font-size: 0.65rem;">
+                   <i class="bi bi-stopwatch me-1"></i>Exp: ${alert.expiration}
+               </span>` : ''}
             </div>
             
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="fw-bold fs-6">${alert.symbol.replace('=X','')}</span>
-              <span class="font-monospace text-light fs-6">E: ${alert.price.toFixed(5)}</span>
-            </div>
-
-            ${alert.expiration ? 
-              `<div class="text-end mb-1">
-                 <span class="badge bg-warning text-dark border border-warning" style="font-size: 0.7rem;">
-                   <i class="bi bi-stopwatch me-1"></i>Exp: ${alert.expiration}
-                 </span>
-               </div>` : ''}
-
-            <div class="alert-details bg-dark bg-opacity-25 rounded p-2 mb-1" style="font-size: 0.75rem;">
-                <div class="d-flex justify-content-between mb-1">
-                    <span class="text-danger fw-medium">SL: ${alert.stopLoss.toFixed(5)}</span>
-                    <span class="text-success fw-medium">TP: ${alert.takeProfit.toFixed(5)}</span>
+            <div class="alert-body" style="font-size: 0.8rem;">
+                <!-- TIME & INFO -->
+                <div class="mb-2 text-secondary">
+                    <div><b>⏱ Hora:</b> <span class="text-light">${alert.time}</span></div>
+                    <div><b>📊 Indicador:</b> <span class="text-light">${alert.indicator}</span></div>
+                    <div><b>💡 Razón:</b> <span class="text-light">${alert.reason}</span></div>
+                    <div><b>⚡ Fuerza:</b> <span class="text-light">${alert.strength}</span></div>
                 </div>
-                 <div class="d-flex justify-content-between text-secondary" style="font-size: 0.7rem;">
-                    <span>ATR: ${alert.atr ? alert.atr.toFixed(4) : '-'}</span>
-                    <span>RSI: ${alert.rsi ? alert.rsi.toFixed(1) : '-'}</span>
-                </div>
-            </div>
 
-            <div class="small text-secondary text-truncate mt-1 fst-italic">
-                <i class="bi bi-info-circle me-1"></i>${alert.reason}
+                <!-- LEVELS -->
+                <div class="bg-dark bg-opacity-25 rounded p-2 mb-2 border border-secondary border-opacity-10">
+                    <div class="fw-bold text-secondary mb-1" style="font-size: 0.7rem;">💰 NIVELES:</div>
+                    <div class="d-flex justify-content-between">
+                        <span>Entrada: <span class="font-monospace text-light">${alert.price.toFixed(5)}</span></span>
+                    </div>
+                     <div class="d-flex justify-content-between">
+                        <span class="text-danger">SL: <span class="font-monospace">${alert.stopLoss.toFixed(5)}</span></span>
+                        <span class="text-success">TP: <span class="font-monospace">${alert.takeProfit.toFixed(5)}</span></span>
+                    </div>
+                </div>
+
+                <!-- CONTEXT -->
+                <div class="d-flex justify-content-between text-secondary" style="font-size: 0.75rem;">
+                    <div><b>📈 CONTEXTO:</b></div>
+                    <div>ATR: ${alert.atr ? alert.atr.toFixed(5) : '-'}</div>
+                    <div>RSI: ${alert.rsi ? alert.rsi.toFixed(1) : '-'}</div>
+                    <div class="text-info">R/R: 1:${rrRatio}</div>
+                </div>
             </div>
           </div>
         `;
