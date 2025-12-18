@@ -112,8 +112,8 @@ def handle_data_request(data):
     chart_payload = orchestrator.get_latest_candles(symbol)
     socketio.emit('chart_data', chart_payload)
 
-    # Trigger analysis to send immediate indicator state
-    orchestrator.analyze_symbol(symbol)
+    # Trigger analysis to send immediate indicator state (WITHOUT external notification)
+    orchestrator.analyze_symbol(symbol, notify_external=False)
 
 # Main Entry Point
 if __name__ == '__main__':

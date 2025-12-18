@@ -18,13 +18,13 @@ class TradingOrchestrator:
         self.analysis_service = analysis_service
         self.config = config
 
-    def analyze_symbol(self, symbol: str) -> AnalysisResult:
+    def analyze_symbol(self, symbol: str, notify_external: bool = True) -> AnalysisResult:
         """
         Orchestrates the analysis for a single symbol:
         1. Fetch data
         2. Calculate indicators
         3. Detect signals
-        4. Notify and return results
+        4. Notify (if enabled) and return results
         """
         # Fetch Data
         df = self.data_provider.get_data(
@@ -44,7 +44,7 @@ class TradingOrchestrator:
         
         # Process Signals (Application Logic)
         for signal in signals:
-            if self.config.TELEGRAM_ENABLED:
+            if self.config.TELEGRAM_ENABLED and notify_external:
                 self.notifier.send_alert(signal)
             # You could add persistency here (Save to DB) if needed
         
