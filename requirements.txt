@@ -8,7 +8,7 @@ pandas>=2.0.0
 
 # Indicadores técnicos (alternativa gratuita a TA-Lib)
 # No requiere compilación C, funciona directamente
-pandas-ta>=0.3.14b
+git+https://github.com/twopirllc/pandas-ta.git@development
 
 # Obtención de datos de mercado (gratuito, sin API key)
 yfinance>=0.2.0
