@@ -100,19 +100,26 @@ DEBUG_MODE = False
 # ===========================================
 # CONFIGURACIÓN DE TELEGRAM
 # ===========================================
-# Usa variables de entorno para despliegue en producción
-# En desarrollo local, puedes poner los valores directamente
+# Las credenciales se cargan desde variables de entorno
+# Local: crear archivo .env con las variables
+# Render: configurar en el panel de Environment Variables
 
 import os
 
+# Cargar .env para desarrollo local
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # En producción no se necesita dotenv
+
 # Token de tu bot de Telegram (obtener de @BotFather)
-# En Render: configurar como variable de entorno TELEGRAM_BOT_TOKEN
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8588134519:AAF8xwqtaKRQKZlzAQ7VtfE9kTrpyy7i0Is")
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 # Chat ID o Canal para enviar alertas
-# En Render: configurar como variable de entorno TELEGRAM_CHAT_ID
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "8471712122")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 # Activar/desactivar notificaciones de Telegram
-TELEGRAM_ENABLED = os.environ.get("TELEGRAM_ENABLED", "true").lower() == "true"
+TELEGRAM_ENABLED = os.environ.get("TELEGRAM_ENABLED", "false").lower() == "true"
+
 
