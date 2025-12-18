@@ -8,7 +8,7 @@ services:
     name: bjj-trader
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --worker-class eventlet -w 1 dashboard:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn --worker-class eventlet -w 1 src.main:app --bind 0.0.0.0:$PORT
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         sync: false
