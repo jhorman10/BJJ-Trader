@@ -100,6 +100,7 @@ class TechnicalAnalysisService:
     def _create_signal(self, symbol, type, indicator, reason, strength, price, atr, rsi, macd_hist, time):
         sl_mult = self.config.get('STOP_LOSS_ATR_MULTIPLIER', 1.5)
         tp_mult = self.config.get('TAKE_PROFIT_ATR_MULTIPLIER', 2.0)
+        expiration = self.config.get('BINARY_EXPIRATION_TIME', "5m")
         
         sl_dist = atr * sl_mult
         tp_dist = atr * tp_mult
@@ -121,6 +122,7 @@ class TechnicalAnalysisService:
             stop_loss=sl,
             take_profit=tp,
             time=time,
+            expiration=expiration,
             atr=atr,
             rsi=rsi,
             macd_hist=macd_hist

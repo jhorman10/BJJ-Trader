@@ -65,7 +65,8 @@ def background_monitor():
                         'time': s.time,
                         'atr': s.atr,
                         'rsi': s.rsi,
-                        'macd_hist': s.macd_hist
+                        'macd_hist': s.macd_hist,
+                        'expiration': s.expiration
                     }
                     socketio.emit('new_alert', alert_payload)
                 

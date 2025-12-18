@@ -34,6 +34,9 @@ class Config:
     
     ATR_PERIOD = 14
     
+    # Binary Options
+    BINARY_EXPIRATION_TIME = "5m"
+    
     # Risk Management
     STOP_LOSS_ATR_MULTIPLIER = 1.5
     TAKE_PROFIT_ATR_MULTIPLIER = 2.0

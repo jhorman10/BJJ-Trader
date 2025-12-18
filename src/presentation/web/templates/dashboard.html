@@ -298,6 +298,7 @@
         initSymbolTabs();
         initChart();
         initSocket();
+        loadAlertsFromStorage();
       });
 
       function initSymbolTabs() {
@@ -436,6 +437,7 @@
 
         socket.on('new_alert', alert => {
           addAlertToFeed(alert);
+          saveAlertToStorage(alert);
           showToast(alert);
           if (soundEnabled) document.getElementById('alertSound').play().catch(()=>{});
         });
@@ -445,6 +447,10 @@
       const alerts = [];
       
       function addAlertToFeed(alert) {
+        // Prevent duplicates in UI
+        const id = `${alert.symbol}-${alert.time}`;
+        if (document.getElementById(id)) return;
+        
         alerts.unshift(alert);
         if(alerts.length > 50) alerts.pop();
         document.getElementById('alertCount').textContent = alerts.length;
@@ -453,7 +459,7 @@
         const isBuy = alert.type === 'COMPRA';
         
         const html = `
-          <div class="alert-item card p-2 mb-2 ${isBuy ? 'buy' : 'sell'}">
+          <div class="alert-item card p-2 mb-2 ${isBuy ? 'buy' : 'sell'}" id="${id}">
             <div class="d-flex justify-content-between align-items-center mb-1">
               <div>
                 <span class="badge ${isBuy ? 'bg-success' : 'bg-danger'} bg-opacity-75 me-1">${isBuy ? 'COMPRA' : 'VENTA'}</span>
@@ -466,6 +472,13 @@
               <span class="fw-bold fs-6">${alert.symbol.replace('=X','')}</span>
               <span class="font-monospace text-light fs-6">E: ${alert.price.toFixed(5)}</span>
             </div>
+
+            ${alert.expiration ? 
+              `<div class="text-end mb-1">
+                 <span class="badge bg-warning text-dark border border-warning" style="font-size: 0.7rem;">
+                   <i class="bi bi-stopwatch me-1"></i>Exp: ${alert.expiration}
+                 </span>
+               </div>` : ''}
 
             <div class="alert-details bg-dark bg-opacity-25 rounded p-2 mb-1" style="font-size: 0.75rem;">
                 <div class="d-flex justify-content-between mb-1">
@@ -485,8 +498,36 @@
         `;
         
         // Remove empty state if present
-        if(alerts.length === 1) container.innerHTML = '';
+        const emptyState = container.querySelector('.text-center');
+        if(emptyState) emptyState.remove();
+        
         container.insertAdjacentHTML('afterbegin', html);
+        
+        // Clean old DOM elements
+         if (container.children.length > 50) {
+            container.removeChild(container.lastChild);
+        }
+      }
+
+      function saveAlertToStorage(alert) {
+          try {
+            let stored = JSON.parse(sessionStorage.getItem('bjj_alerts') || '[]');
+            if (!stored.some(a => a.symbol === alert.symbol && a.time === alert.time)) {
+                 stored.unshift(alert);
+                 if (stored.length > 50) stored = stored.slice(0, 50);
+                 sessionStorage.setItem('bjj_alerts', JSON.stringify(stored));
+            }
+          } catch(e) { console.error('Storage error', e); }
+      }
+
+      function loadAlertsFromStorage() {
+          try {
+            const stored = JSON.parse(sessionStorage.getItem('bjj_alerts') || '[]');
+            // Iterate from end to start so they are added in correct order (since addAlertToFeed does prepend)
+             for (let i = stored.length - 1; i >= 0; i--) {
+                addAlertToFeed(stored[i]);
+            }
+          } catch(e) { console.error('Storage error', e); }
       }
 
       function showToast(alert) {

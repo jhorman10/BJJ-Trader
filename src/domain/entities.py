@@ -21,6 +21,8 @@ class Signal:
     stop_loss: float
     take_profit: float
     time: str
+    # Binary Options
+    expiration: Optional[str] = None
     # Technical context
     atr: Optional[float] = None
     rsi: Optional[float] = None
