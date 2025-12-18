@@ -50,6 +50,5 @@ class TelegramAdapter(INotifier):
             f"• ATR: {signal.atr:.5f}\n"
             f"• RSI: {signal.rsi:.1f}\n"
             f"• R/R: 1:{rr_ratio:.2f}\n\n"
-            f"<i>⚠️ Educativo - Gestiona tu riesgo</i>"
         )
         return msg
