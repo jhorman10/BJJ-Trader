@@ -54,6 +54,7 @@ def on_new_signal(s):
         'macd_hist': s.macd_hist,
         'expiration': s.expiration
     }
+    print(f"📡 Emitting new_alert to socket: {s.symbol} {s.type}")
     socketio.emit('new_alert', alert_payload)
 
 def on_price_update(symbol, price):
