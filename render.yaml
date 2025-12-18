@@ -25,9 +25,8 @@ services:
   # -------------------------------------
   # 2. Frontend Service (React Static Site)
   # -------------------------------------
-  - type: static
-    name: bjj-trader
-    env: static
+staticSites:
+  - name: bjj-trader
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
