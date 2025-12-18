@@ -4,8 +4,11 @@
 # Este archivo configura el despliegue automático en Render
 
 services:
+  # -------------------------------------
+  # 1. Backend Service (Flask API)
+  # -------------------------------------
   - type: web
-    name: bjj-trader
+    name: bjj-trader-api
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --worker-class eventlet -w 1 src.main:app --bind 0.0.0.0:$PORT
@@ -18,3 +21,24 @@ services:
         value: "true"
       - key: PYTHON_VERSION
         value: "3.11"
+
+  # -------------------------------------
+  # 2. Frontend Service (React Static Site)
+  # -------------------------------------
+  - type: static
+    name: bjj-trader-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    # Routes / Rewrites to link Frontend -> Backend on the same domain
+    routes:
+      - type: rewrite
+        source: /socket.io/*
+        destination: https://bjj-trader-api.onrender.com/socket.io/*
+      - type: rewrite
+        source: /api/*
+        destination: https://bjj-trader-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html

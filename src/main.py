@@ -1,4 +1,4 @@
-from src.presentation.web.app import app, socketio, background_monitor
+from src.presentation.web.app import app, socketio, bot_service
 import threading
 
 # Required for Render to pick up the app
@@ -6,13 +6,9 @@ import threading
 
 if __name__ == "__main__":
     # Start monitor if running directly
-    monitor_thread = threading.Thread(target=background_monitor)
-    monitor_thread.daemon = True
-    monitor_thread.start()
+    bot_service.start()
     
     socketio.run(app, host='0.0.0.0', port=8888)
 else:
     # When imported by Gunicorn, start the background thread
-    monitor_thread = threading.Thread(target=background_monitor)
-    monitor_thread.daemon = True
-    monitor_thread.start()
+    bot_service.start()

@@ -7,11 +7,15 @@ except ImportError:
 
 class Config:
     # Symbols
+    # Forex pairs often need '=X' in Yahoo Finance, but let's check
+    # Common format: EURUSD=X, GBPUSD=X, etc.
     SYMBOLS = [
         "EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDCHF=X",
         "AUDUSD=X", "USDCAD=X", "NZDUSD=X",
         "EURGBP=X", "EURJPY=X", "GBPJPY=X", "AUDJPY=X",
-        "EURAUD=X", "EURCHF=X", "GBPCHF=X"
+        "EURAUD=X", "EURCHF=X", "GBPCHF=X",
+        "GC=F", # Gold Futures
+        "BTC-USD" # Crypto
     ]
     
     # Data Settings

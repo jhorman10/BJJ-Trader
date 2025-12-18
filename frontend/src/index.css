@@ -1,0 +1,85 @@
+/* Modern Dark Theme Overrides */
+:root {
+  --bs-body-bg: #0f172a; /* Slate 900-ish */
+  --bs-body-color: #cbd5e1; /* Slate 200 */
+  --bs-dark-rgb: 30, 41, 59; /* Slate 800 */
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+/* Mobile: Allow scroll by default */
+body {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Desktop: Fixed App-like experience */
+@media (min-width: 992px) {
+  body {
+    overflow: hidden; /* Prevent page-level scroll only on desktop */
+  }
+
+  .app-layout {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .app-content {
+    overflow: hidden;
+  }
+
+  .h-lg-100 {
+    height: 100% !important;
+  }
+
+  .chart-card-container {
+    overflow: hidden;
+  }
+}
+
+/* Mobile defaults */
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card-container {
+  min-height: 400px; /* Ensure chart has height on mobile */
+}
+
+@media (max-width: 991px) {
+  .signals-container {
+     max-height: 500px;
+  }
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient Text */
+.text-gradient {
+  background: linear-gradient(to right, #60a5fa, #a855f7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Card refinements */
+.card {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: #1e293b;
+}
