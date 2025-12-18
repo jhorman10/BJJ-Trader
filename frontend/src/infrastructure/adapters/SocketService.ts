@@ -5,7 +5,7 @@ import type { Signal, Indicators, ChartDataPoint } from "../../domain/models";
 // In production, connect directly to the backend API.
 // In development, use localhost.
 const SOCKET_URL = import.meta.env.PROD
-  ? "https://bjj-trader-api.onrender.com"
+  ? "https://bjj-trader.onrender.com"
   : "http://localhost:8888";
 
 export class SocketService implements IMarketStream {
