@@ -108,6 +108,16 @@ export const Dashboard = () => {
               </select>
             </div>
 
+            <a
+              href="https://t.me/your_channel"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-sm btn-outline-primary rounded-circle"
+              title="Join Telegram Channel"
+            >
+              <i className="bi bi-telegram"></i>
+            </a>
+
             <button
               className={`btn btn-sm rounded-circle ${
                 isMuted ? "btn-outline-danger" : "btn-outline-success"
