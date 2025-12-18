@@ -1,1355 +1,486 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-bs-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BJJ Trader - Señales en Tiempo Real</title>
-    <meta name="description" content="Dashboard de trading con señales en tiempo real para Forex" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>BJJ Trader Pro</title>
     
-    <!-- TradingView Lightweight Charts -->
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    
+    <!-- Trading Libraries -->
     <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
-    
-    <!-- Socket.IO -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     
     <style>
-      /* ===========================================
-         CSS VARIABLES & RESET
-         =========================================== */
       :root {
-        --bg-primary: #0a0e14;
-        --bg-secondary: #12171f;
-        --bg-tertiary: #1a2130;
-        --bg-card: linear-gradient(145deg, #151b24, #1d2433);
-        --border-color: rgba(255, 255, 255, 0.06);
-        --border-glow: rgba(99, 102, 241, 0.3);
-        --text-primary: #ffffff;
-        --text-secondary: rgba(255, 255, 255, 0.6);
-        --text-muted: rgba(255, 255, 255, 0.4);
-        --accent-green: #10b981;
-        --accent-green-glow: rgba(16, 185, 129, 0.4);
-        --accent-red: #ef4444;
-        --accent-red-glow: rgba(239, 68, 68, 0.4);
-        --accent-blue: #6366f1;
-        --accent-blue-glow: rgba(99, 102, 241, 0.4);
-        --accent-purple: #a855f7;
-        --accent-yellow: #f59e0b;
-        --gradient-primary: linear-gradient(135deg, #6366f1, #a855f7);
-        --gradient-green: linear-gradient(135deg, #10b981, #34d399);
-        --gradient-red: linear-gradient(135deg, #ef4444, #f87171);
-        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
-        --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
-        --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
-        --radius-sm: 8px;
-        --radius-md: 12px;
-        --radius-lg: 16px;
-        --radius-xl: 24px;
-      }
-
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+        --tv-bg: #131722;
+        --tv-card: #1e222d;
+        --tv-border: #2a2e39;
+        --tv-green: #26a69a;
+        --tv-red: #ef5350;
+        --tv-blue: #2962ff;
       }
 
       body {
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-        background: var(--bg-primary);
-        color: var(--text-primary);
-        min-height: 100vh;
-        overflow-x: hidden;
-        -webkit-font-smoothing: antialiased;
+        font-family: 'Inter', sans-serif;
+        background-color: var(--tv-bg);
+        color: #d1d4dc;
       }
 
-      /* ===========================================
-         GLASSMORPHISM UTILITIES
-         =========================================== */
-      .glass {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid var(--border-color);
-      }
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: var(--tv-bg); }
+      ::-webkit-scrollbar-thumb { background: #363a45; border-radius: 3px; }
 
-      .glass-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-md);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
+      /* Components Override */
+      .navbar { background-color: var(--tv-card); border-bottom: 1px solid var(--tv-border); }
+      .card { background-color: var(--tv-card); border: 1px solid var(--tv-border); }
+      .btn-outline-secondary { border-color: var(--tv-border); color: #b2b5be; }
+      .btn-outline-secondary:hover { background-color: var(--tv-border); color: #fff; }
 
-      .glass-card:hover {
-        border-color: var(--border-glow);
-        box-shadow: var(--shadow-glow);
-        transform: translateY(-2px);
-      }
-
-      /* ===========================================
-         HEADER
-         =========================================== */
-      .header {
-        background: rgba(10, 14, 20, 0.8);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-bottom: 1px solid var(--border-color);
-        padding: 1rem 1.5rem;
+      /* Symbol Scroller */
+      .symbol-scroller {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-      }
-
-      .logo {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-      }
-
-      .logo-icon {
-        width: 40px;
-        height: 40px;
-        background: var(--gradient-primary);
-        border-radius: var(--radius-md);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-        box-shadow: 0 4px 12px var(--accent-blue-glow);
-      }
-
-      .logo-text {
-        font-size: 1.25rem;
-        font-weight: 700;
-        background: var(--gradient-primary);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        letter-spacing: -0.02em;
-      }
-
-      .header-controls {
-        display: flex;
-        gap: 0.75rem;
-        align-items: center;
-      }
-
-      .status-pill {
-        display: flex;
-        align-items: center;
+        overflow-x: auto;
         gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: rgba(16, 185, 129, 0.1);
-        border: 1px solid rgba(16, 185, 129, 0.2);
-        border-radius: 999px;
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--accent-green);
+        padding: 0.5rem 0;
+        scrollbar-width: none; /* Firefox */
       }
-
-      .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--accent-green);
-        box-shadow: 0 0 8px var(--accent-green);
-        animation: pulse 2s infinite;
-      }
-
-      @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.6; transform: scale(0.9); }
-      }
-
-      .sound-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: var(--bg-tertiary);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-md);
-        color: var(--text-secondary);
-        font-size: 0.8rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .sound-btn:hover {
-        background: var(--accent-blue);
-        border-color: var(--accent-blue);
-        color: white;
-      }
-
-      .sound-btn.active {
-        background: var(--accent-blue);
-        border-color: var(--accent-blue);
-        color: white;
-      }
-
-      /* ===========================================
-         MAIN LAYOUT
-         =========================================== */
-      .main-container {
-        display: grid;
-        grid-template-columns: 1fr 380px;
-        gap: 1.5rem;
-        padding: 1.5rem;
-        max-width: 1800px;
-        margin: 0 auto;
-        min-height: calc(100vh - 80px);
-      }
-
-      /* ===========================================
-         CHART SECTION
-         =========================================== */
-      .chart-section {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-      }
-
-      /* Symbol Tabs */
-      .symbol-tabs-wrapper {
-        position: relative;
-      }
-
-      .symbol-tabs {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        padding: 0.25rem;
-        background: var(--bg-secondary);
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--border-color);
-      }
-
-      .symbol-tab {
-        padding: 0.6rem 1.2rem;
-        background: transparent;
-        border: none;
-        border-radius: var(--radius-md);
-        color: var(--text-secondary);
-        cursor: pointer;
-        font-weight: 500;
+      .symbol-scroller::-webkit-scrollbar { display: none; }
+      
+      .symbol-btn {
+        white-space: nowrap;
+        border: 1px solid var(--tv-border);
+        background: var(--tv-bg);
+        color: #b2b5be;
+        padding: 0.35rem 1rem;
+        border-radius: 20px;
         font-size: 0.85rem;
+        font-weight: 500;
         transition: all 0.2s;
-        font-family: inherit;
       }
-
-      .symbol-tab:hover {
-        color: var(--text-primary);
-        background: rgba(255, 255, 255, 0.05);
-      }
-
-      .symbol-tab.active {
-        background: var(--gradient-primary);
+      .symbol-btn:hover { border-color: #5d606b; color: #fff; }
+      .symbol-btn.active {
+        background-color: var(--tv-blue); /* Bootstrap Primary */
+        border-color: var(--tv-blue);
         color: white;
-        box-shadow: 0 4px 12px var(--accent-blue-glow);
       }
 
       /* Chart Container */
-      .chart-wrapper {
-        flex: 1;
-        min-height: 450px;
-      }
-
       .chart-container {
-        height: 100%;
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-        border: 1px solid var(--border-color);
-        background: var(--bg-secondary);
-      }
-
-      #main-chart {
-        width: 100%;
-        height: 100%;
-      }
-
-      /* ===========================================
-         INDICATORS GRID
-         =========================================== */
-      .indicators-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1rem;
-      }
-
-      .indicator-card {
-        padding: 1.25rem;
+        height: 60vh; /* Default height */
         position: relative;
+        border-radius: 8px;
         overflow: hidden;
       }
-
-      .indicator-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: var(--gradient-primary);
-        opacity: 0;
-        transition: opacity 0.3s;
+      @media (min-width: 992px) {
+        .chart-container { height: 75vh; }
       }
 
-      .indicator-card:hover::before {
-        opacity: 1;
-      }
-
-      .indicator-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: var(--radius-md);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1rem;
-        margin-bottom: 0.75rem;
-      }
-
-      .indicator-icon.price { background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2)); }
-      .indicator-icon.rsi { background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.2)); }
-      .indicator-icon.macd { background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.2)); }
-      .indicator-icon.trend { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.2)); }
-
-      .indicator-label {
-        font-size: 0.7rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-
-      .indicator-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        line-height: 1.2;
-      }
-
-      .indicator-value.bullish { color: var(--accent-green); }
-      .indicator-value.bearish { color: var(--accent-red); }
-      .indicator-value.neutral { color: var(--text-primary); }
-
-      .indicator-subtitle {
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-        margin-top: 0.25rem;
-      }
-
-      /* ===========================================
-         ALERTS SIDEBAR
-         =========================================== */
-      .alerts-sidebar {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        max-height: calc(100vh - 110px);
-        position: sticky;
-        top: 90px;
-      }
-
-      .sidebar-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem 0;
-      }
-
-      .sidebar-title {
-        font-size: 1rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-      }
-
-      .alert-count {
-        background: var(--gradient-primary);
-        color: white;
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 0.25rem 0.6rem;
-        border-radius: 999px;
-        min-width: 24px;
-        text-align: center;
-      }
-
-      .alerts-list {
-        flex: 1;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        padding-right: 0.5rem;
-      }
-
-      .alerts-list::-webkit-scrollbar {
-        width: 4px;
-      }
-
-      .alerts-list::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      .alerts-list::-webkit-scrollbar-thumb {
-        background: var(--border-color);
-        border-radius: 4px;
-      }
-
-      /* Alert Card */
-      .alert-card {
-        padding: 1rem;
-        animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .alert-card::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-      }
-
-      .alert-card.buy::before { background: var(--gradient-green); }
-      .alert-card.sell::before { background: var(--gradient-red); }
-
-      @keyframes slideIn {
-        from { opacity: 0; transform: translateX(20px); }
-        to { opacity: 1; transform: translateX(0); }
-      }
-
-      .alert-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 0.75rem;
-      }
-
-      .alert-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        padding: 0.3rem 0.6rem;
-        border-radius: var(--radius-sm);
-        font-size: 0.7rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
-
-      .alert-badge.buy {
-        background: rgba(16, 185, 129, 0.15);
-        color: var(--accent-green);
-      }
-
-      .alert-badge.sell {
-        background: rgba(239, 68, 68, 0.15);
-        color: var(--accent-red);
-      }
-
-      .alert-symbol {
-        font-size: 1rem;
-        font-weight: 700;
-        margin-bottom: 0.25rem;
-      }
-
-      .alert-time {
-        font-size: 0.7rem;
-        color: var(--text-muted);
-      }
-
-      .alert-reason {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        margin-bottom: 0.75rem;
-        line-height: 1.4;
-      }
-
-      .alert-levels {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
-      }
-
-      .level-item {
-        text-align: center;
-        padding: 0.5rem;
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: var(--radius-sm);
-        border: 1px solid var(--border-color);
-      }
-
-      .level-label {
-        font-size: 0.65rem;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.2rem;
-      }
-
-      .level-value {
-        font-size: 0.8rem;
-        font-weight: 600;
-        font-family: "SF Mono", "Fira Code", monospace;
-      }
-
-      .level-value.price { color: var(--accent-blue); }
-      .level-value.sl { color: var(--accent-red); }
-      .level-value.tp { color: var(--accent-green); }
-
-      /* Empty State */
-      .empty-alerts {
-        text-align: center;
-        padding: 3rem 1rem;
-        color: var(--text-secondary);
-      }
-
-      .empty-icon {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        opacity: 0.5;
-      }
-
-      .empty-title {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-      }
-
-      .empty-text {
-        font-size: 0.85rem;
-        color: var(--text-muted);
-      }
-
-      /* ===========================================
-         NOTIFICATION POPUP
-         =========================================== */
-      .notification-popup {
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        max-width: 380px;
-        padding: 1.5rem;
-        border-radius: var(--radius-lg);
-        z-index: 1000;
-        animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        box-shadow: var(--shadow-lg);
-      }
-
-      .notification-popup.buy {
-        background: linear-gradient(145deg, #12271d, #0d3320);
-        border: 1px solid rgba(16, 185, 129, 0.3);
-      }
-
-      .notification-popup.sell {
-        background: linear-gradient(145deg, #271216, #330d12);
-        border: 1px solid rgba(239, 68, 68, 0.3);
-      }
-
-      @keyframes popIn {
-        from { opacity: 0; transform: translateX(100%) scale(0.9); }
-        to { opacity: 1; transform: translateX(0) scale(1); }
-      }
-
-      .notification-close {
-        position: absolute;
-        top: 0.75rem;
-        right: 0.75rem;
-        background: none;
-        border: none;
-        color: var(--text-secondary);
-        cursor: pointer;
-        font-size: 1.25rem;
-        transition: color 0.2s;
-      }
-
-      .notification-close:hover {
-        color: var(--text-primary);
-      }
-
-      .notification-title {
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin-bottom: 0.75rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .notification-title.buy { color: var(--accent-green); }
-      .notification-title.sell { color: var(--accent-red); }
-
-      /* ===========================================
-         RESPONSIVE DESIGN - MOBILE FIRST
-         =========================================== */
+      /* Indicator Cards */
+      .indicator-value { font-size: 1.5rem; font-weight: 700; letter-spacing: -1px; }
+      .indicator-label { text-transform: uppercase; font-size: 0.7rem; color: #787b86; font-weight: 600; }
       
-      /* Tablet and below */
-      @media (max-width: 1200px) {
-        .main-container {
-          grid-template-columns: 1fr;
-          max-width: 100%;
-        }
-
-        .alerts-sidebar {
-          position: static;
-          max-height: 400px;
-          order: -1;
-        }
-
-        .indicators-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
+      /* Alerts Feed */
+      .alerts-feed {
+        max-height: 400px;
+        overflow-y: auto;
       }
-
-      /* Mobile landscape and small tablets */
+      .alert-item {
+        border-left: 3px solid transparent;
+        background: rgba(42, 46, 57, 0.5);
+        margin-bottom: 0.5rem;
+        transition: transform 0.2s;
+      }
+      .alert-item:hover { transform: translateX(2px); }
+      .alert-item.buy { border-left-color: var(--tv-green); }
+      .alert-item.sell { border-left-color: var(--tv-red); }
+      
+      /* Mobile Optimization */
       @media (max-width: 768px) {
-        .header {
-          padding: 0.75rem 1rem;
-          flex-direction: column;
-          gap: 0.75rem;
-          align-items: stretch;
-        }
-
-        .logo {
-          justify-content: center;
-        }
-
-        .header-controls {
-          display: flex;
-          justify-content: center;
-          gap: 0.75rem;
-        }
-
-        .main-container {
-          padding: 0.75rem;
-          gap: 0.75rem;
-        }
-
-        /* Symbol tabs with scroll indicator */
-        .symbol-tabs-wrapper {
-          position: relative;
-          overflow: hidden;
-        }
-
-        .symbol-tabs-wrapper::after {
-          content: "";
-          position: absolute;
-          right: 0;
-          top: 0;
-          bottom: 0;
-          width: 40px;
-          background: linear-gradient(to left, var(--bg-secondary) 20%, transparent);
-          pointer-events: none;
-        }
-
-        .symbol-tabs {
-          overflow-x: auto;
-          flex-wrap: nowrap;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-          padding: 0.5rem;
-          padding-right: 50px;
-        }
-
-        .symbol-tabs::-webkit-scrollbar {
-          display: none;
-        }
-
-        .symbol-tab {
-          flex-shrink: 0;
-          padding: 0.6rem 1rem;
-          font-size: 0.85rem;
-        }
-
-        .chart-wrapper {
-          min-height: 300px;
-          max-height: 350px;
-        }
-
-        .indicators-grid {
-          grid-template-columns: repeat(2, 1fr);
-          gap: 0.5rem;
-        }
-
-        .indicator-card {
-          padding: 0.75rem;
-        }
-
-        .indicator-icon {
-          width: 28px;
-          height: 28px;
-          font-size: 0.85rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .indicator-label {
-          font-size: 0.6rem;
-        }
-
-        .indicator-value {
-          font-size: 1.1rem;
-        }
-
-        .indicator-subtitle {
-          font-size: 0.65rem;
-        }
-
-        .alerts-sidebar {
-          max-height: none;
-          order: 1;
-        }
-
-        .alerts-list {
-          max-height: 300px;
-        }
-
-        .telegram-cta {
-          padding: 0.75rem 1rem;
-        }
-
-        .telegram-icon {
-          width: 36px;
-          height: 36px;
-        }
-
-        .telegram-title {
-          font-size: 0.85rem;
-        }
+        .chart-container { height: 50vh; }
+        .indicator-value { font-size: 1.25rem; }
+        .navbar-brand { font-size: 1.1rem; }
       }
 
-      /* Mobile portrait */
-      @media (max-width: 480px) {
-        .header {
-          padding: 0.6rem 0.75rem;
-          gap: 0.5rem;
-        }
-
-        .logo-icon {
-          width: 32px;
-          height: 32px;
-          font-size: 1rem;
-        }
-
-        .logo-text {
-          font-size: 1rem;
-        }
-
-        .header-controls {
-          width: 100%;
-          justify-content: space-between;
-        }
-
-        .sound-btn, .status-pill {
-          padding: 0.4rem 0.75rem;
-          font-size: 0.75rem;
-        }
-
-        .main-container {
-          padding: 0.5rem;
-          gap: 0.5rem;
-        }
-
-        .symbol-tab {
-          padding: 0.5rem 0.75rem;
-          font-size: 0.75rem;
-        }
-
-        .chart-wrapper {
-          min-height: 250px;
-          max-height: 300px;
-        }
-
-        .indicators-grid {
-          grid-template-columns: 1fr 1fr;
-          gap: 0.4rem;
-        }
-
-        .indicator-card {
-          padding: 0.6rem;
-        }
-
-        .indicator-icon {
-          width: 24px;
-          height: 24px;
-          font-size: 0.75rem;
-          margin-bottom: 0.4rem;
-        }
-
-        .indicator-value {
-          font-size: 1rem;
-        }
-
-        .indicator-subtitle {
-          display: none;
-        }
-
-        .alert-card {
-          padding: 0.75rem;
-        }
-
-        .alert-symbol {
-          font-size: 0.9rem;
-        }
-
-        .alert-reason {
-          font-size: 0.75rem;
-        }
-
-        .alert-levels {
-          gap: 0.3rem;
-        }
-
-        .level-item {
-          padding: 0.35rem;
-        }
-
-        .level-label {
-          font-size: 0.55rem;
-        }
-
-        .level-value {
-          font-size: 0.7rem;
-        }
-
-        .notification-popup {
-          left: 8px;
-          right: 8px;
-          top: 70px;
-          max-width: none;
-          padding: 1rem;
-        }
-
-        .empty-icon {
-          font-size: 2rem;
-        }
-
-        .empty-title {
-          font-size: 0.9rem;
-        }
-
-        .empty-text {
-          font-size: 0.75rem;
-        }
+      /* Status Dot */
+      .status-dot {
+        height: 8px; width: 8px; 
+        background-color: #ef5350; 
+        border-radius: 50%; 
+        display: inline-block;
+        box-shadow: 0 0 5px rgba(239, 83, 80, 0.5);
       }
-
-      /* Extra small devices */
-      @media (max-width: 360px) {
-        .indicator-icon {
-          display: none;
-        }
-
-        .indicator-card {
-          padding: 0.5rem;
-        }
-
-        .indicator-value {
-          font-size: 0.9rem;
-        }
-
-        .logo-text {
-          font-size: 0.9rem;
-        }
-
-        .chart-wrapper {
-          min-height: 220px;
-        }
+      .status-dot.connected { 
+        background-color: #26a69a; 
+        box-shadow: 0 0 5px rgba(38, 166, 154, 0.5); 
       }
-
-      /* ===========================================
-         TELEGRAM CTA
-         =========================================== */
-      .telegram-cta {
-        background: linear-gradient(135deg, rgba(0, 136, 204, 0.1), rgba(0, 136, 204, 0.05));
-        border: 1px solid rgba(0, 136, 204, 0.2);
-        border-radius: var(--radius-lg);
-        padding: 1rem 1.25rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        text-decoration: none;
-        color: var(--text-primary);
-        transition: all 0.3s;
-      }
-
-      .telegram-cta:hover {
-        background: linear-gradient(135deg, rgba(0, 136, 204, 0.2), rgba(0, 136, 204, 0.1));
-        border-color: rgba(0, 136, 204, 0.4);
-        transform: translateY(-2px);
-      }
-
-      .telegram-icon {
-        width: 40px;
-        height: 40px;
-        background: #0088cc;
-        border-radius: var(--radius-md);
+      
+      /* Floating Telegram Button (Mobile) */
+      .fab-telegram {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        background-color: #229ED9;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
-        flex-shrink: 0;
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 1000;
+        transition: transform 0.2s;
       }
-
-      .telegram-content {
-        flex: 1;
-      }
-
-      .telegram-title {
-        font-weight: 600;
-        font-size: 0.9rem;
-        margin-bottom: 0.15rem;
-      }
-
-      .telegram-subtitle {
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-      }
+      .fab-telegram:active { transform: scale(0.95); }
     </style>
   </head>
   <body>
-    <!-- Header -->
-    <header class="header">
-      <div class="logo">
-        <div class="logo-icon">📈</div>
-        <span class="logo-text">BJJ Trader</span>
-      </div>
-      <div class="header-controls">
-        <button class="sound-btn active" id="soundToggle" onclick="toggleSound()">
-          <span id="soundIcon">🔔</span>
-          <span id="soundText">Sonido</span>
-        </button>
-        <div class="status-pill">
-          <div class="status-dot"></div>
-          <span id="connectionStatus">En vivo</span>
-        </div>
-      </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="main-container">
-      <!-- Chart Section -->
-      <section class="chart-section">
-        <!-- Symbol Tabs -->
-        <div class="symbol-tabs-wrapper">
-          <div class="symbol-tabs" id="symbolTabs"></div>
-        </div>
-
-        <!-- Chart -->
-        <div class="chart-wrapper">
-          <div class="chart-container">
-            <div id="main-chart"></div>
-          </div>
-        </div>
-
-        <!-- Indicators -->
-        <div class="indicators-grid">
-          <div class="glass-card indicator-card">
-            <div class="indicator-icon price">💰</div>
-            <div class="indicator-label">Precio</div>
-            <div class="indicator-value neutral" id="ind-price">-.-----</div>
-            <div class="indicator-subtitle" id="ind-change">-</div>
-          </div>
-          <div class="glass-card indicator-card">
-            <div class="indicator-icon rsi">📊</div>
-            <div class="indicator-label">RSI (14)</div>
-            <div class="indicator-value neutral" id="ind-rsi">-</div>
-            <div class="indicator-subtitle" id="ind-rsi-status">Calculando...</div>
-          </div>
-          <div class="glass-card indicator-card">
-            <div class="indicator-icon macd">📈</div>
-            <div class="indicator-label">MACD</div>
-            <div class="indicator-value neutral" id="ind-macd">-</div>
-            <div class="indicator-subtitle" id="ind-macd-status">Calculando...</div>
-          </div>
-          <div class="glass-card indicator-card">
-            <div class="indicator-icon trend">🎯</div>
-            <div class="indicator-label">Tendencia</div>
-            <div class="indicator-value neutral" id="ind-trend">-</div>
-            <div class="indicator-subtitle" id="ind-atr">ATR: -</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Alerts Sidebar -->
-      <aside class="alerts-sidebar">
-        <!-- Telegram CTA -->
-        <a href="https://t.me/BJJTraderAlertas" target="_blank" class="telegram-cta">
-          <div class="telegram-icon">✈️</div>
-          <div class="telegram-content">
-            <div class="telegram-title">Únete al Canal</div>
-            <div class="telegram-subtitle">Recibe alertas en Telegram</div>
-          </div>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+      <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+          <i class="bi bi-graph-up-arrow text-primary"></i>
+          <span class="fw-bold">BJJ Trader</span>
         </a>
-
-        <div class="sidebar-header">
-          <h2 class="sidebar-title">
-            🚨 Alertas
-            <span class="alert-count" id="alertCount">0</span>
-          </h2>
+        
+        <div class="d-flex align-items-center gap-3">
+          <div class="d-flex align-items-center gap-2 bg-dark rounded-pill px-3 py-1 border border-secondary border-opacity-25">
+            <span class="status-dot" id="statusDot"></span>
+            <span class="small fw-medium text-secondary" id="statusText">Offline</span>
+          </div>
+          
+          <button class="btn btn-sm btn-outline-secondary rounded-circle" id="soundBtn" onclick="toggleSound()">
+            <i class="bi bi-bell-fill" id="soundIcon"></i>
+          </button>
         </div>
+      </div>
+    </nav>
 
-        <div class="alerts-list" id="alertsList">
-          <div class="empty-alerts">
-            <div class="empty-icon">📡</div>
-            <p class="empty-title">Esperando señales...</p>
-            <p class="empty-text">El bot está analizando los mercados en tiempo real</p>
+    <!-- Main Layout -->
+    <div class="container-fluid py-3">
+      
+      <!-- Symbol Scroller -->
+      <div class="symbol-scroller mb-3" id="symbolTabs">
+        <!-- Javascript will populate this -->
+      </div>
+
+      <div class="row g-3">
+        <!-- Left Column: Chart & Indicators -->
+        <div class="col-lg-9">
+          <!-- Chart -->
+          <div class="card mb-3">
+            <div class="card-body p-0">
+              <div id="main-chart" class="chart-container"></div>
+              
+              <!-- Floating Chart Info (Absolute) -->
+              <div class="position-absolute top-0 start-0 p-3" style="pointer-events: none; z-index: 10;">
+                <h4 class="m-0 fw-bold" id="currentPriceDisplay">0.00000</h4>
+                <small class="fw-medium" id="priceChangeDisplay">--%</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Indicators Grid -->
+          <div class="row g-2 g-md-3">
+            <div class="col-6 col-md-3">
+              <div class="card h-100">
+                <div class="card-body p-3 text-center">
+                  <div class="indicator-label mb-1">RSI (14)</div>
+                  <div class="indicator-value" id="ind-rsi">--</div>
+                  <small class="text-secondary" id="ind-rsi-status">Neutro</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card h-100">
+                <div class="card-body p-3 text-center">
+                  <div class="indicator-label mb-1">MACD</div>
+                  <div class="indicator-value" id="ind-macd">--</div>
+                  <small class="text-secondary" id="ind-macd-status">--</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card h-100">
+                <div class="card-body p-3 text-center">
+                  <div class="indicator-label mb-1">Tendencia</div>
+                  <div class="indicator-value" id="ind-trend">--</div>
+                  <small class="text-secondary">EMA 12/26</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card h-100">
+                <div class="card-body p-3 text-center">
+                  <div class="indicator-label mb-1">Volatilidad</div>
+                  <div class="indicator-value fs-4" id="ind-atr">--</div>
+                  <small class="text-secondary">ATR</small>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </aside>
-    </main>
 
-    <!-- Notification Container -->
-    <div id="notificationContainer"></div>
+        <!-- Right Column: Alerts & Info -->
+        <div class="col-lg-3">
+          <!-- Desktop Telegram CTA -->
+          <a href="https://t.me/BJJTraderAlertas" target="_blank" class="card mb-3 text-decoration-none border-info d-none d-lg-block">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="bg-primary bg-opacity-10 p-3 rounded-3 text-primary">
+                <i class="bi bi-telegram fs-4"></i>
+              </div>
+              <div>
+                <h6 class="mb-0 text-white">Canal de Señales</h6>
+                <small class="text-secondary">Únete gratis en Telegram</small>
+              </div>
+            </div>
+          </a>
+
+          <!-- Recent Alerts -->
+          <div class="card h-100" style="min-height: 400px;">
+            <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3">
+              <h6 class="mb-0 fw-bold"><i class="bi bi-broadcast me-2 text-danger"></i>Señales Recenties</h6>
+              <span class="badge bg-secondary bg-opacity-25 text-secondary" id="alertCount">0</span>
+            </div>
+            <div class="card-body p-2 alert-feed" id="alertsList">
+              <div class="text-center py-5 text-secondary opacity-50">
+                <i class="bi bi-activity fs-1 d-block mb-2"></i>
+                <small>Esperando oportunidades...</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Telegram FAB -->
+    <a href="https://t.me/BJJTraderAlertas" target="_blank" class="fab-telegram d-lg-none">
+      <i class="bi bi-telegram fs-4"></i>
+    </a>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <!-- Dynamic Toasts will be injected here -->
+    </div>
 
     <!-- Audio -->
-    <audio id="alertSound" preload="auto">
-      <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleW1RYHGQa2NiWmJra2hVb4N7f4aWoqaieqdofmNUWW93bGhnZ3N1aV5nb4aBfIF/gYqJkI2GfWdaUFeHlZSLfHZ3dGpnb3V0eIF6bmpoeXd4gYmQlJOahXVkYmN6i5iYmZGOkZ6koaSak4V0amJfZ3R3c25qbHBwdHh3dnt4c3N3gIiFhoWBenVydnh1bXB1d3l9e3l/g4F8eHl8gn15cXFyc3R3fXx5enl2cnF1fIKEhYmKg3t4dXZ5f4B+d3d3eHl4dnV4en19e3h4en+DhISEgXt3dXZ6fX18eXh4eHd4eXp7e3t5eHl7fX5/gH99enh4eXt7e3t6eXh4eHl5eXp6enp6enp7fH19fX59fHt7e3t7e3t7e3t7e3t7e3t7fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8" type="audio/wav" />
-    </audio>
+    <audio id="alertSound" src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleW1RYHGQa2NiWmJra2hVb4N7f4aWoqaieqdofmNUWW93bGhnZ3N1aV5nb4aBfIF/gYqJkI2GfWdaUFeHlZSLfHZ3dGpnb3V0eIF6bmpoeXd4gYmQlJOahXVkYmN6i5iYmZGOkZ6koaSak4V0amJfZ3R3c25qbHBwdHh3dnt4c3N3gIiFhoWBenVydnh1bXB1d3l9e3l/g4F8eHl8gn15cXFyc3R3fXx5enl2cnF1fIKEhYmKg3t4dXZ5f4B+d3d3eHl4dnV4en19e3h4en+DhISEgXt3dXZ6fX18eXh4eHd4eXp7e3t5eHl7fX5/gH99enh4eXt7e3t6eXh4eHl5eXp6enp6enp7fH19fX59fHt7e3t7e3t7e3t7e3t7e3t7fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8"></audio>
 
+    <!-- App Logic -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      // ===========================================
-      // STATE & CONFIG
-      // ===========================================
-      let socket;
-      let chart;
-      let candlestickSeries;
-      let ema12Series;
-      let ema26Series;
-      let currentSymbol = "EURUSD=X";
-      let soundEnabled = true;
-      let alerts = [];
-
-      const symbols = [
+      // ================= CONFIGURACIÓN =================
+      const SYMBOLS = [
         "EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDCHF=X",
         "AUDUSD=X", "USDCAD=X", "NZDUSD=X",
         "EURGBP=X", "EURJPY=X", "GBPJPY=X", "AUDJPY=X",
         "EURAUD=X", "EURCHF=X", "GBPCHF=X"
       ];
+      let currentSymbol = SYMBOLS[0];
+      let soundEnabled = true;
+      let chart, candleSeries, ema12Series, ema26Series;
+      let socket;
 
-      // ===========================================
-      // INITIALIZATION
-      // ===========================================
-      document.addEventListener("DOMContentLoaded", () => {
-        initChart();
+      // ================= INICIALIZACIÓN =================
+      document.addEventListener('DOMContentLoaded', () => {
         initSymbolTabs();
+        initChart();
         initSocket();
       });
 
-      // ===========================================
-      // CHART
-      // ===========================================
-      function initChart() {
-        const container = document.getElementById("main-chart");
-
-        chart = LightweightCharts.createChart(container, {
-          width: container.clientWidth,
-          height: container.clientHeight,
-          layout: {
-            background: { type: "solid", color: "#12171f" },
-            textColor: "rgba(255, 255, 255, 0.5)",
-          },
-          grid: {
-            vertLines: { color: "rgba(255, 255, 255, 0.03)" },
-            horzLines: { color: "rgba(255, 255, 255, 0.03)" },
-          },
-          crosshair: {
-            mode: LightweightCharts.CrosshairMode.Normal,
-            vertLine: { color: "rgba(99, 102, 241, 0.3)", width: 1, style: 2 },
-            horzLine: { color: "rgba(99, 102, 241, 0.3)", width: 1, style: 2 },
-          },
-          rightPriceScale: { borderColor: "rgba(255, 255, 255, 0.1)" },
-          timeScale: { borderColor: "rgba(255, 255, 255, 0.1)", timeVisible: true },
-        });
-
-        candlestickSeries = chart.addCandlestickSeries({
-          upColor: "#10b981",
-          downColor: "#ef4444",
-          borderUpColor: "#10b981",
-          borderDownColor: "#ef4444",
-          wickUpColor: "#10b981",
-          wickDownColor: "#ef4444",
-        });
-
-        ema12Series = chart.addLineSeries({
-          color: "#6366f1",
-          lineWidth: 2,
-          title: "EMA 12",
-        });
-
-        ema26Series = chart.addLineSeries({
-          color: "#a855f7",
-          lineWidth: 2,
-          title: "EMA 26",
-        });
-
-        window.addEventListener("resize", () => {
-          chart.resize(container.clientWidth, container.clientHeight);
-        });
-      }
-
-      // ===========================================
-      // SYMBOL TABS
-      // ===========================================
       function initSymbolTabs() {
-        const tabsContainer = document.getElementById("symbolTabs");
-
-        symbols.forEach((symbol) => {
-          const tab = document.createElement("button");
-          tab.className = `symbol-tab ${symbol === currentSymbol ? "active" : ""}`;
-          tab.textContent = symbol.replace("=X", "");
-          tab.onclick = () => selectSymbol(symbol);
-          tabsContainer.appendChild(tab);
-        });
+        const container = document.getElementById('symbolTabs');
+        container.innerHTML = SYMBOLS.map(sym => `
+          <button class="symbol-btn ${sym === currentSymbol ? 'active' : ''}" 
+                  onclick="switchSymbol('${sym}')">
+            ${sym.replace('=X', '')}
+          </button>
+        `).join('');
       }
 
-      function selectSymbol(symbol) {
-        currentSymbol = symbol;
-
-        document.querySelectorAll(".symbol-tab").forEach((tab) => {
-          tab.classList.toggle("active", tab.textContent === symbol.replace("=X", ""));
+      function switchSymbol(newSym) {
+        currentSymbol = newSym;
+        document.querySelectorAll('.symbol-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.textContent.trim() === newSym.replace('=X', ''));
         });
-
-        if (socket && socket.connected) {
-          socket.emit("request_data", { symbol: symbol });
-        }
+        if (socket) socket.emit('request_data', { symbol: currentSymbol });
       }
 
-      // ===========================================
-      // WEBSOCKET
-      // ===========================================
+      function toggleSound() {
+        soundEnabled = !soundEnabled;
+        const icon = document.getElementById('soundIcon');
+        icon.className = soundEnabled ? 'bi bi-bell-fill' : 'bi bi-bell-slash';
+      }
+
+      // ================= CHARTING (TradingView Lightweight) =================
+      function initChart() {
+        const container = document.getElementById('main-chart');
+        chart = LightweightCharts.createChart(container, {
+          layout: { background: { type: 'solid', color: '#1e222d' }, textColor: '#d1d4dc' },
+          grid: { vertLines: { color: '#2a2e39' }, horzLines: { color: '#2a2e39' } },
+          crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+          timeScale: { borderColor: '#2a2e39', timeVisible: true },
+          rightPriceScale: { borderColor: '#2a2e39' },
+          autoSize: true, // Responsive
+        });
+
+        candleSeries = chart.addCandlestickSeries({
+          upColor: '#26a69a', downColor: '#ef5350',
+          borderUpColor: '#26a69a', borderDownColor: '#ef5350',
+          wickUpColor: '#26a69a', wickDownColor: '#ef5350',
+        });
+
+        ema12Series = chart.addLineSeries({ color: '#2962ff', lineWidth: 2, title: 'EMA12' });
+        ema26Series = chart.addLineSeries({ color: '#b620e0', lineWidth: 2, title: 'EMA26' });
+        
+        // Resize observer for advanced responsiveness
+        new ResizeObserver(entries => {
+            if (entries.length === 0 || entries[0].target !== container) { return; }
+            const newRect = entries[0].contentRect;
+            chart.applyOptions({ width: newRect.width, height: newRect.height });
+        }).observe(container);
+      }
+
+      // ================= SOCKET.IO =================
       function initSocket() {
         socket = io();
-
-        socket.on("connect", () => {
-          updateConnectionStatus(true);
-          socket.emit("request_data", { symbol: currentSymbol });
+        
+        socket.on('connect', () => {
+          document.getElementById('statusDot').classList.add('connected');
+          document.getElementById('statusText').textContent = 'Conectado';
+          socket.emit('request_data', { symbol: currentSymbol });
         });
 
-        socket.on("disconnect", () => updateConnectionStatus(false));
-        socket.on("chart_data", updateChart);
-        socket.on("indicators", updateIndicators);
-        socket.on("new_alert", handleNewAlert);
-        socket.on("price_update", updatePrice);
+        socket.on('disconnect', () => {
+          document.getElementById('statusDot').classList.remove('connected');
+          document.getElementById('statusText').textContent = 'Reconectando...';
+        });
+
+        socket.on('chart_data', data => {
+          if(!data.candles) return;
+          const candles = data.candles.map(c => ({
+            time: c.time, open: c.open, high: c.high, low: c.low, close: c.close
+          }));
+          candleSeries.setData(candles);
+          
+          const ema12Data = data.ema12.map((val, i) => ({ time: candles[i]?.time, value: val })).filter(x => x.time && x.value);
+          const ema26Data = data.ema26.map((val, i) => ({ time: candles[i]?.time, value: val })).filter(x => x.time && x.value);
+          
+          ema12Series.setData(ema12Data);
+          ema26Series.setData(ema26Data);
+          
+          chart.timeScale().fitContent();
+        });
+
+        socket.on('indicators', data => {
+          // Update Price Header
+          const priceEl = document.getElementById('currentPriceDisplay');
+          const changeEl = document.getElementById('priceChangeDisplay');
+          
+          priceEl.textContent = data.price.toFixed(5);
+          priceEl.className = `m-0 fw-bold ${data.change >= 0 ? 'text-success' : 'text-danger'}`;
+          
+          changeEl.textContent = `${data.change >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%`;
+          changeEl.className = `fw-medium ${data.change >= 0 ? 'text-success' : 'text-danger'}`;
+
+          // RSI
+          const rsiEl = document.getElementById('ind-rsi');
+          rsiEl.textContent = data.rsi.toFixed(1);
+          rsiEl.className = `indicator-value ${data.rsi > 70 ? 'text-danger' : (data.rsi < 30 ? 'text-success' : 'text-light')}`;
+          document.getElementById('ind-rsi-status').textContent = data.rsi > 70 ? 'Sobrecompra' : (data.rsi < 30 ? 'Sobreventa' : 'Neutro');
+
+          // MACD
+          const macdEl = document.getElementById('ind-macd');
+          const isBull = data.macd > data.macdSignal;
+          macdEl.innerHTML = isBull ? '<i class="bi bi-arrow-up-right"></i>' : '<i class="bi bi-arrow-down-right"></i>';
+          macdEl.className = `indicator-value ${isBull ? 'text-success' : 'text-danger'}`;
+          document.getElementById('ind-macd-status').textContent = isBull ? 'Alcista' : 'Bajista';
+
+          // Trend
+          const trendEl = document.getElementById('ind-trend');
+          const trendBull = data.ema12 > data.ema26;
+          trendEl.textContent = trendBull ? 'ALCISTA' : 'BAJISTA';
+          trendEl.className = `indicator-value ${trendBull ? 'text-success' : 'text-danger'}`;
+
+          // ATR
+          document.getElementById('ind-atr').textContent = data.atr.toFixed(5);
+        });
+        
+        socket.on('price_update', data => {
+            if(data.symbol === currentSymbol) {
+                 document.getElementById('currentPriceDisplay').textContent = data.price.toFixed(5);
+            }
+        });
+
+        socket.on('new_alert', alert => {
+          addAlertToFeed(alert);
+          showToast(alert);
+          if (soundEnabled) document.getElementById('alertSound').play().catch(()=>{});
+        });
       }
 
-      function updateConnectionStatus(connected) {
-        const statusEl = document.getElementById("connectionStatus");
-        const dotEl = document.querySelector(".status-dot");
-        const pillEl = document.querySelector(".status-pill");
-
-        if (connected) {
-          statusEl.textContent = "En vivo";
-          dotEl.style.background = "#10b981";
-          dotEl.style.boxShadow = "0 0 8px #10b981";
-          pillEl.style.borderColor = "rgba(16, 185, 129, 0.2)";
-          pillEl.style.background = "rgba(16, 185, 129, 0.1)";
-          pillEl.style.color = "#10b981";
-        } else {
-          statusEl.textContent = "Desconectado";
-          dotEl.style.background = "#ef4444";
-          dotEl.style.boxShadow = "0 0 8px #ef4444";
-          pillEl.style.borderColor = "rgba(239, 68, 68, 0.2)";
-          pillEl.style.background = "rgba(239, 68, 68, 0.1)";
-          pillEl.style.color = "#ef4444";
-        }
-      }
-
-      // ===========================================
-      // UPDATE CHART
-      // ===========================================
-      function updateChart(data) {
-        if (!data || !data.candles) return;
-
-        const candles = data.candles.map((c) => ({
-          time: c.time,
-          open: c.open,
-          high: c.high,
-          low: c.low,
-          close: c.close,
-        }));
-
-        const ema12Data = data.ema12
-          .map((v, i) => ({ time: data.candles[i].time, value: v }))
-          .filter((d) => d.value !== null);
-
-        const ema26Data = data.ema26
-          .map((v, i) => ({ time: data.candles[i].time, value: v }))
-          .filter((d) => d.value !== null);
-
-        candlestickSeries.setData(candles);
-        ema12Series.setData(ema12Data);
-        ema26Series.setData(ema26Data);
-        chart.timeScale().fitContent();
-      }
-
-      // ===========================================
-      // UPDATE INDICATORS
-      // ===========================================
-      function updateIndicators(data) {
-        const priceEl = document.getElementById("ind-price");
-        priceEl.textContent = data.price.toFixed(5);
-        priceEl.className = "indicator-value " + (data.change >= 0 ? "bullish" : "bearish");
-
-        document.getElementById("ind-change").textContent = `${data.change >= 0 ? "+" : ""}${data.change.toFixed(4)} (${data.changePercent.toFixed(2)}%)`;
-
-        const rsiEl = document.getElementById("ind-rsi");
-        rsiEl.textContent = data.rsi.toFixed(2);
-
-        let rsiClass = "neutral";
-        let rsiStatus = "Neutral";
-        if (data.rsi < 30) { rsiClass = "bullish"; rsiStatus = "🔵 Sobreventa"; }
-        else if (data.rsi > 70) { rsiClass = "bearish"; rsiStatus = "🔴 Sobrecompra"; }
-        rsiEl.className = "indicator-value " + rsiClass;
-        document.getElementById("ind-rsi-status").textContent = rsiStatus;
-
-        const macdEl = document.getElementById("ind-macd");
-        macdEl.textContent = data.macd.toFixed(6);
-        macdEl.className = "indicator-value " + (data.macd > data.macdSignal ? "bullish" : "bearish");
-        document.getElementById("ind-macd-status").textContent = data.macd > data.macdSignal ? "📈 Alcista" : "📉 Bajista";
-
-        const trendEl = document.getElementById("ind-trend");
-        const isBullish = data.ema12 > data.ema26;
-        trendEl.textContent = isBullish ? "↗️ ALCISTA" : "↘️ BAJISTA";
-        trendEl.className = "indicator-value " + (isBullish ? "bullish" : "bearish");
-        document.getElementById("ind-atr").textContent = `ATR: ${data.atr.toFixed(5)}`;
-      }
-
-      function updatePrice(data) {
-        if (data.symbol !== currentSymbol) return;
-        document.getElementById("ind-price").textContent = data.price.toFixed(5);
-      }
-
-      // ===========================================
-      // HANDLE ALERTS
-      // ===========================================
-      function handleNewAlert(alert) {
+      // ================= ALERT HANDLING =================
+      const alerts = [];
+      
+      function addAlertToFeed(alert) {
         alerts.unshift(alert);
-        if (alerts.length > 50) alerts.pop();
+        if(alerts.length > 50) alerts.pop();
+        document.getElementById('alertCount').textContent = alerts.length;
 
-        updateAlertsList();
-        showNotification(alert);
-
-        if (soundEnabled) {
-          document.getElementById("alertSound").play().catch(() => {});
-        }
-      }
-
-      function updateAlertsList() {
-        const listEl = document.getElementById("alertsList");
-        const countEl = document.getElementById("alertCount");
-
-        countEl.textContent = alerts.length;
-
-        if (alerts.length === 0) {
-          listEl.innerHTML = `
-            <div class="empty-alerts">
-              <div class="empty-icon">📡</div>
-              <p class="empty-title">Esperando señales...</p>
-              <p class="empty-text">El bot está analizando los mercados en tiempo real</p>
+        const container = document.getElementById('alertsList');
+        const isBuy = alert.type === 'COMPRA';
+        
+        const html = `
+          <div class="alert-item card p-2 mb-2 ${isBuy ? 'buy' : 'sell'}">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge ${isBuy ? 'bg-success' : 'bg-danger'} bg-opacity-75">${isBuy ? 'COMPRA' : 'VENTA'}</span>
+              <small class="text-secondary" style="font-size: 0.7rem;">${alert.time}</small>
             </div>
-          `;
-          return;
-        }
-
-        listEl.innerHTML = alerts.map((a) => `
-          <div class="glass-card alert-card ${a.type === 'COMPRA' ? 'buy' : 'sell'}">
-            <div class="alert-header">
-              <div>
-                <span class="alert-badge ${a.type === 'COMPRA' ? 'buy' : 'sell'}">
-                  ${a.type === 'COMPRA' ? '🟢 COMPRA' : '🔴 VENTA'}
-                </span>
-                <div class="alert-symbol">${a.symbol.replace('=X', '')}</div>
-              </div>
-              <span class="alert-time">${a.time}</span>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold">${alert.symbol.replace('=X','')}</span>
+              <span class="font-monospace text-light">${alert.price.toFixed(5)}</span>
             </div>
-            <div class="alert-reason">${a.reason}</div>
-            <div class="alert-levels">
-              <div class="level-item">
-                <div class="level-label">Entrada</div>
-                <div class="level-value price">${a.price.toFixed(5)}</div>
-              </div>
-              <div class="level-item">
-                <div class="level-label">Stop Loss</div>
-                <div class="level-value sl">${a.stopLoss.toFixed(5)}</div>
-              </div>
-              <div class="level-item">
-                <div class="level-label">Take Profit</div>
-                <div class="level-value tp">${a.takeProfit.toFixed(5)}</div>
-              </div>
-            </div>
+            <div class="small text-secondary text-truncate mt-1">${alert.reason}</div>
           </div>
-        `).join("");
+        `;
+        
+        // Remove empty state if present
+        if(alerts.length === 1) container.innerHTML = '';
+        container.insertAdjacentHTML('afterbegin', html);
       }
 
-      function showNotification(alert) {
-        const container = document.getElementById("notificationContainer");
-        const id = "notif-" + Date.now();
-
-        const notifHtml = `
-          <div id="${id}" class="notification-popup glass ${alert.type === 'COMPRA' ? 'buy' : 'sell'}">
-            <button class="notification-close" onclick="closeNotification('${id}')">&times;</button>
-            <div class="notification-title ${alert.type === 'COMPRA' ? 'buy' : 'sell'}">
-              ${alert.type === 'COMPRA' ? '🟢 SEÑAL DE COMPRA' : '🔴 SEÑAL DE VENTA'}
-            </div>
-            <div class="alert-symbol" style="margin-bottom: 0.5rem">${alert.symbol.replace('=X', '')}</div>
-            <div class="alert-reason">${alert.reason}</div>
-            <div class="alert-levels" style="margin-top: 0.75rem">
-              <div class="level-item">
-                <div class="level-label">Entrada</div>
-                <div class="level-value price">${alert.price.toFixed(5)}</div>
+      function showToast(alert) {
+        const isBuy = alert.type === 'COMPRA';
+        const colorClass = isBuy ? 'success' : 'danger';
+        const toastId = 'toast-' + Date.now();
+        
+        const toastHtml = `
+          <div id="${toastId}" class="toast align-items-center text-bg-dark border-${colorClass}" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+              <div class="toast-body">
+                <strong class="text-${colorClass}">${isBuy ? '🟢 COMPRA' : '🔴 VENTA'} ${alert.symbol.replace('=X','')}</strong>
+                <div class="small mt-1">${alert.reason}</div>
               </div>
-              <div class="level-item">
-                <div class="level-label">SL</div>
-                <div class="level-value sl">${alert.stopLoss.toFixed(5)}</div>
-              </div>
-              <div class="level-item">
-                <div class="level-label">TP</div>
-                <div class="level-value tp">${alert.takeProfit.toFixed(5)}</div>
-              </div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
           </div>
         `;
-
-        container.innerHTML = notifHtml;
-        setTimeout(() => closeNotification(id), 8000);
-      }
-
-      function closeNotification(id) {
-        const el = document.getElementById(id);
-        if (el) el.remove();
-      }
-
-      // ===========================================
-      // SOUND TOGGLE
-      // ===========================================
-      function toggleSound() {
-        soundEnabled = !soundEnabled;
-        const btn = document.getElementById("soundToggle");
-        const icon = document.getElementById("soundIcon");
-        const text = document.getElementById("soundText");
-
-        if (soundEnabled) {
-          btn.classList.add("active");
-          icon.textContent = "🔔";
-          text.textContent = "Sonido";
-        } else {
-          btn.classList.remove("active");
-          icon.textContent = "🔕";
-          text.textContent = "Mute";
-        }
+        
+        document.querySelector('.toast-container').insertAdjacentHTML('beforeend', toastHtml);
+        const toastEl = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+        toast.show();
+        
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
       }
     </script>
   </body>
