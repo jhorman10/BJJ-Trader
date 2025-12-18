@@ -28,7 +28,6 @@ staticSites:
     rootDir: frontend
     buildCommand: npm install && npm run build
     publishPath: ./dist
-    # Routes / Rewrites to link Frontend -> Backend on the same domain
     routes:
       - type: rewrite
         source: /socket.io/*
