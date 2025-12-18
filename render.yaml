@@ -3,10 +3,6 @@
 # ===========================================
 # Este archivo configura el despliegue automático en Render
 
-# Added version 1 to ensure schema compliance for staticSites
-type: blueprint
-version: "1"
-
 services:
   # -------------------------------------
   # 1. Backend Service (Flask API)
