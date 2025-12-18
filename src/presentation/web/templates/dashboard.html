@@ -382,14 +382,20 @@
           ema12Series.setData(ema12Data);
           ema26Series.setData(ema26Data);
           
-          // Scale chart to last 3 hours (3 * 3600 seconds)
+          // Scale chart logic
           if(candles.length > 0) {
-            const lastTime = candles[candles.length - 1].time;
-            const startTime = lastTime - (3 * 60 * 60); 
-            chart.timeScale().setVisibleRange({
-                from: startTime,
-                to: lastTime
-            });
+            // Mobile (< 768px): Zoom to last 3 hours
+            if (window.innerWidth < 768) {
+                const lastTime = candles[candles.length - 1].time;
+                const startTime = lastTime - (3 * 60 * 60); 
+                chart.timeScale().setVisibleRange({
+                    from: startTime,
+                    to: lastTime
+                });
+            } else {
+                // Desktop: Standard fit
+                chart.timeScale().fitContent();
+            }
           } else {
             chart.timeScale().fitContent();
           }
