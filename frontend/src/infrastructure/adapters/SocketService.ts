@@ -2,11 +2,10 @@ import { io, Socket } from "socket.io-client";
 import type { IMarketStream } from "../../application/ports/IMarketStream";
 import type { Signal, Indicators, ChartDataPoint } from "../../domain/models";
 
-// In production, connect directly to the backend API.
-// In development, use localhost.
-const SOCKET_URL = import.meta.env.PROD
-  ? "https://bjj-trader.onrender.com"
-  : "http://localhost:8888";
+// Backend URL from environment variable (set in .env or Render dashboard)
+// In production: VITE_BACKEND_URL should be set to the backend service URL
+// In development: defaults to localhost:8888
+const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8888";
 
 export class SocketService implements IMarketStream {
   private socket: Socket | null = null;
