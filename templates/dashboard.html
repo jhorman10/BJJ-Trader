@@ -3,38 +3,51 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🤖 Trading Alert Bot - Dashboard</title>
-
-    <!-- TradingView Lightweight Charts (gratuito) -->
+    <title>BJJ Trader - Señales en Tiempo Real</title>
+    <meta name="description" content="Dashboard de trading con señales en tiempo real para Forex" />
+    
+    <!-- TradingView Lightweight Charts -->
     <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
-
-    <!-- Socket.IO para tiempo real -->
+    
+    <!-- Socket.IO -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
+    
     <!-- Google Fonts -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    
     <style>
       /* ===========================================
-           VARIABLES Y RESET
-           =========================================== */
+         CSS VARIABLES & RESET
+         =========================================== */
       :root {
-        --bg-primary: #0d1117;
-        --bg-secondary: #161b22;
-        --bg-tertiary: #21262d;
-        --border-color: #30363d;
-        --text-primary: #f0f6fc;
-        --text-secondary: #8b949e;
-        --accent-green: #3fb950;
-        --accent-red: #f85149;
-        --accent-yellow: #d29922;
-        --accent-blue: #58a6ff;
-        --accent-purple: #a371f7;
-        --gradient-green: linear-gradient(135deg, #238636, #2ea043);
-        --gradient-red: linear-gradient(135deg, #da3633, #f85149);
+        --bg-primary: #0a0e14;
+        --bg-secondary: #12171f;
+        --bg-tertiary: #1a2130;
+        --bg-card: linear-gradient(145deg, #151b24, #1d2433);
+        --border-color: rgba(255, 255, 255, 0.06);
+        --border-glow: rgba(99, 102, 241, 0.3);
+        --text-primary: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.6);
+        --text-muted: rgba(255, 255, 255, 0.4);
+        --accent-green: #10b981;
+        --accent-green-glow: rgba(16, 185, 129, 0.4);
+        --accent-red: #ef4444;
+        --accent-red-glow: rgba(239, 68, 68, 0.4);
+        --accent-blue: #6366f1;
+        --accent-blue-glow: rgba(99, 102, 241, 0.4);
+        --accent-purple: #a855f7;
+        --accent-yellow: #f59e0b;
+        --gradient-primary: linear-gradient(135deg, #6366f1, #a855f7);
+        --gradient-green: linear-gradient(135deg, #10b981, #34d399);
+        --gradient-red: linear-gradient(135deg, #ef4444, #f87171);
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+        --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.15);
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 24px;
       }
 
       * {
@@ -49,15 +62,42 @@
         color: var(--text-primary);
         min-height: 100vh;
         overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
       }
 
       /* ===========================================
-           HEADER
-           =========================================== */
+         GLASSMORPHISM UTILITIES
+         =========================================== */
+      .glass {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--border-color);
+      }
+
+      .glass-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .glass-card:hover {
+        border-color: var(--border-glow);
+        box-shadow: var(--shadow-glow);
+        transform: translateY(-2px);
+      }
+
+      /* ===========================================
+         HEADER
+         =========================================== */
       .header {
-        background: var(--bg-secondary);
+        background: rgba(10, 14, 20, 0.8);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         border-bottom: 1px solid var(--border-color);
-        padding: 1rem 2rem;
+        padding: 1rem 1.5rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -73,29 +113,44 @@
       }
 
       .logo-icon {
-        font-size: 1.75rem;
+        width: 40px;
+        height: 40px;
+        background: var(--gradient-primary);
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        box-shadow: 0 4px 12px var(--accent-blue-glow);
       }
 
       .logo-text {
         font-size: 1.25rem;
         font-weight: 700;
-        background: linear-gradient(
-          135deg,
-          var(--accent-blue),
-          var(--accent-purple)
-        );
+        background: var(--gradient-primary);
         -webkit-background-clip: text;
+        background-clip: text;
         -webkit-text-fill-color: transparent;
+        letter-spacing: -0.02em;
       }
 
-      .status-badge {
+      .header-controls {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+      }
+
+      .status-pill {
         display: flex;
         align-items: center;
         gap: 0.5rem;
         padding: 0.5rem 1rem;
-        background: var(--bg-tertiary);
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.2);
         border-radius: 999px;
-        font-size: 0.875rem;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--accent-green);
       }
 
       .status-dot {
@@ -103,77 +158,115 @@
         height: 8px;
         border-radius: 50%;
         background: var(--accent-green);
+        box-shadow: 0 0 8px var(--accent-green);
         animation: pulse 2s infinite;
       }
 
       @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.5;
-        }
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(0.9); }
+      }
+
+      .sound-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .sound-btn:hover {
+        background: var(--accent-blue);
+        border-color: var(--accent-blue);
+        color: white;
+      }
+
+      .sound-btn.active {
+        background: var(--accent-blue);
+        border-color: var(--accent-blue);
+        color: white;
       }
 
       /* ===========================================
-           MAIN LAYOUT
-           =========================================== */
+         MAIN LAYOUT
+         =========================================== */
       .main-container {
         display: grid;
-        grid-template-columns: 1fr 350px;
-        gap: 1rem;
-        padding: 1rem;
-        max-height: calc(100vh - 70px);
+        grid-template-columns: 1fr 380px;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        max-width: 1800px;
+        margin: 0 auto;
+        min-height: calc(100vh - 80px);
       }
 
       /* ===========================================
-           CHART SECTION
-           =========================================== */
+         CHART SECTION
+         =========================================== */
       .chart-section {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 1.5rem;
+      }
+
+      /* Symbol Tabs */
+      .symbol-tabs-wrapper {
+        position: relative;
       }
 
       .symbol-tabs {
         display: flex;
         gap: 0.5rem;
         flex-wrap: wrap;
-        max-height: 80px;
-        overflow-y: auto;
+        padding: 0.25rem;
+        background: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
       }
 
       .symbol-tab {
-        padding: 0.5rem 1rem;
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
+        padding: 0.6rem 1.2rem;
+        background: transparent;
+        border: none;
+        border-radius: var(--radius-md);
         color: var(--text-secondary);
         cursor: pointer;
         font-weight: 500;
-        font-size: 0.875rem;
+        font-size: 0.85rem;
         transition: all 0.2s;
+        font-family: inherit;
       }
 
       .symbol-tab:hover {
-        border-color: var(--accent-blue);
         color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.05);
       }
 
       .symbol-tab.active {
-        background: var(--accent-blue);
-        border-color: var(--accent-blue);
+        background: var(--gradient-primary);
         color: white;
+        box-shadow: 0 4px 12px var(--accent-blue-glow);
+      }
+
+      /* Chart Container */
+      .chart-wrapper {
+        flex: 1;
+        min-height: 450px;
       }
 
       .chart-container {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
+        height: 100%;
+        border-radius: var(--radius-lg);
         overflow: hidden;
-        flex: 1;
-        min-height: 400px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-secondary);
       }
 
       #main-chart {
@@ -182,8 +275,8 @@
       }
 
       /* ===========================================
-           INDICATORS PANEL
-           =========================================== */
+         INDICATORS GRID
+         =========================================== */
       .indicators-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -191,40 +284,62 @@
       }
 
       .indicator-card {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
         padding: 1.25rem;
-        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
       }
 
-      .indicator-card:hover {
-        border-color: var(--accent-blue);
-        transform: translateY(-2px);
+      .indicator-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: opacity 0.3s;
       }
+
+      .indicator-card:hover::before {
+        opacity: 1;
+      }
+
+      .indicator-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .indicator-icon.price { background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2)); }
+      .indicator-icon.rsi { background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.2)); }
+      .indicator-icon.macd { background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.2)); }
+      .indicator-icon.trend { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.2)); }
 
       .indicator-label {
-        font-size: 0.75rem;
-        color: var(--text-secondary);
+        font-size: 0.7rem;
+        color: var(--text-muted);
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.1em;
+        font-weight: 600;
         margin-bottom: 0.5rem;
       }
 
       .indicator-value {
         font-size: 1.5rem;
         font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
       }
 
-      .indicator-value.bullish {
-        color: var(--accent-green);
-      }
-      .indicator-value.bearish {
-        color: var(--accent-red);
-      }
-      .indicator-value.neutral {
-        color: var(--text-secondary);
-      }
+      .indicator-value.bullish { color: var(--accent-green); }
+      .indicator-value.bearish { color: var(--accent-red); }
+      .indicator-value.neutral { color: var(--text-primary); }
 
       .indicator-subtitle {
         font-size: 0.75rem;
@@ -233,35 +348,41 @@
       }
 
       /* ===========================================
-           ALERTS SIDEBAR
-           =========================================== */
+         ALERTS SIDEBAR
+         =========================================== */
       .alerts-sidebar {
         display: flex;
         flex-direction: column;
         gap: 1rem;
-        max-height: calc(100vh - 90px);
+        max-height: calc(100vh - 110px);
+        position: sticky;
+        top: 90px;
       }
 
       .sidebar-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        padding: 0.5rem 0;
       }
 
       .sidebar-title {
-        font-size: 1.125rem;
+        font-size: 1rem;
         font-weight: 600;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
       }
 
       .alert-count {
-        background: var(--accent-blue);
+        background: var(--gradient-primary);
         color: white;
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.25rem 0.6rem;
         border-radius: 999px;
+        min-width: 24px;
+        text-align: center;
       }
 
       .alerts-list {
@@ -270,33 +391,45 @@
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
+        padding-right: 0.5rem;
       }
 
-      .alert-card {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 1rem;
-        animation: slideIn 0.3s ease-out;
+      .alerts-list::-webkit-scrollbar {
+        width: 4px;
       }
+
+      .alerts-list::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .alerts-list::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 4px;
+      }
+
+      /* Alert Card */
+      .alert-card {
+        padding: 1rem;
+        animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .alert-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+      }
+
+      .alert-card.buy::before { background: var(--gradient-green); }
+      .alert-card.sell::before { background: var(--gradient-red); }
 
       @keyframes slideIn {
-        from {
-          opacity: 0;
-          transform: translateX(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateX(0);
-        }
-      }
-
-      .alert-card.buy {
-        border-left: 4px solid var(--accent-green);
-      }
-
-      .alert-card.sell {
-        border-left: 4px solid var(--accent-red);
+        from { opacity: 0; transform: translateX(20px); }
+        to { opacity: 1; transform: translateX(0); }
       }
 
       .alert-header {
@@ -306,32 +439,41 @@
         margin-bottom: 0.75rem;
       }
 
-      .alert-type {
-        display: flex;
+      .alert-badge {
+        display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
-        font-weight: 600;
+        gap: 0.4rem;
+        padding: 0.3rem 0.6rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
 
-      .alert-type.buy {
+      .alert-badge.buy {
+        background: rgba(16, 185, 129, 0.15);
         color: var(--accent-green);
       }
-      .alert-type.sell {
+
+      .alert-badge.sell {
+        background: rgba(239, 68, 68, 0.15);
         color: var(--accent-red);
       }
 
       .alert-symbol {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
       }
 
       .alert-time {
-        font-size: 0.75rem;
-        color: var(--text-secondary);
+        font-size: 0.7rem;
+        color: var(--text-muted);
       }
 
       .alert-reason {
-        font-size: 0.875rem;
+        font-size: 0.8rem;
         color: var(--text-secondary);
         margin-bottom: 0.75rem;
         line-height: 1.4;
@@ -341,39 +483,35 @@
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 0.5rem;
-        font-size: 0.75rem;
       }
 
       .level-item {
         text-align: center;
         padding: 0.5rem;
-        background: var(--bg-tertiary);
-        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
       }
 
       .level-label {
-        color: var(--text-secondary);
-        margin-bottom: 0.25rem;
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.2rem;
       }
 
       .level-value {
+        font-size: 0.8rem;
         font-weight: 600;
         font-family: "SF Mono", "Fira Code", monospace;
       }
 
-      .level-value.price {
-        color: var(--accent-blue);
-      }
-      .level-value.sl {
-        color: var(--accent-red);
-      }
-      .level-value.tp {
-        color: var(--accent-green);
-      }
+      .level-value.price { color: var(--accent-blue); }
+      .level-value.sl { color: var(--accent-red); }
+      .level-value.tp { color: var(--accent-green); }
 
-      /* ===========================================
-           EMPTY STATE
-           =========================================== */
+      /* Empty State */
       .empty-alerts {
         text-align: center;
         padding: 3rem 1rem;
@@ -383,42 +521,48 @@
       .empty-icon {
         font-size: 3rem;
         margin-bottom: 1rem;
+        opacity: 0.5;
+      }
+
+      .empty-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
       }
 
       .empty-text {
-        font-size: 0.875rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
       }
 
       /* ===========================================
-           ALERT NOTIFICATION (POPUP)
-           =========================================== */
-      .alert-notification {
+         NOTIFICATION POPUP
+         =========================================== */
+      .notification-popup {
         position: fixed;
         top: 100px;
         right: 20px;
-        background: var(--bg-secondary);
-        border: 2px solid var(--accent-green);
-        border-radius: 16px;
+        max-width: 380px;
         padding: 1.5rem;
-        max-width: 400px;
+        border-radius: var(--radius-lg);
         z-index: 1000;
-        animation: notificationSlide 0.5s ease-out;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: var(--shadow-lg);
       }
 
-      .alert-notification.sell {
-        border-color: var(--accent-red);
+      .notification-popup.buy {
+        background: linear-gradient(145deg, #12271d, #0d3320);
+        border: 1px solid rgba(16, 185, 129, 0.3);
       }
 
-      @keyframes notificationSlide {
-        from {
-          opacity: 0;
-          transform: translateX(100%);
-        }
-        to {
-          opacity: 1;
-          transform: translateX(0);
-        }
+      .notification-popup.sell {
+        background: linear-gradient(145deg, #271216, #330d12);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+
+      @keyframes popIn {
+        from { opacity: 0; transform: translateX(100%) scale(0.9); }
+        to { opacity: 1; transform: translateX(0) scale(1); }
       }
 
       .notification-close {
@@ -430,10 +574,15 @@
         color: var(--text-secondary);
         cursor: pointer;
         font-size: 1.25rem;
+        transition: color 0.2s;
+      }
+
+      .notification-close:hover {
+        color: var(--text-primary);
       }
 
       .notification-title {
-        font-size: 1.25rem;
+        font-size: 1.1rem;
         font-weight: 700;
         margin-bottom: 0.75rem;
         display: flex;
@@ -441,65 +590,150 @@
         gap: 0.5rem;
       }
 
-      .notification-title.buy {
-        color: var(--accent-green);
-      }
-      .notification-title.sell {
-        color: var(--accent-red);
-      }
+      .notification-title.buy { color: var(--accent-green); }
+      .notification-title.sell { color: var(--accent-red); }
 
       /* ===========================================
-           SOUND TOGGLE
-           =========================================== */
-      .sound-toggle {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        cursor: pointer;
-        padding: 0.5rem 1rem;
-        background: var(--bg-tertiary);
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        color: var(--text-secondary);
-        transition: all 0.2s;
-      }
-
-      .sound-toggle:hover {
-        border-color: var(--accent-blue);
-      }
-
-      .sound-toggle.active {
-        background: var(--accent-blue);
-        border-color: var(--accent-blue);
-        color: white;
-      }
-
-      /* ===========================================
-           RESPONSIVE
-           =========================================== */
-      @media (max-width: 1024px) {
+         RESPONSIVE DESIGN
+         =========================================== */
+      @media (max-width: 1200px) {
         .main-container {
           grid-template-columns: 1fr;
+        }
+
+        .alerts-sidebar {
+          position: static;
+          max-height: 400px;
         }
 
         .indicators-grid {
           grid-template-columns: repeat(2, 1fr);
         }
+      }
+
+      @media (max-width: 768px) {
+        .header {
+          padding: 0.75rem 1rem;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+        }
+
+        .logo-text {
+          font-size: 1rem;
+        }
+
+        .main-container {
+          padding: 1rem;
+          gap: 1rem;
+        }
+
+        .symbol-tabs {
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+        }
+
+        .symbol-tabs::-webkit-scrollbar {
+          display: none;
+        }
+
+        .symbol-tab {
+          flex-shrink: 0;
+          padding: 0.5rem 0.9rem;
+          font-size: 0.8rem;
+        }
+
+        .chart-wrapper {
+          min-height: 350px;
+        }
+
+        .indicators-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 0.75rem;
+        }
+
+        .indicator-card {
+          padding: 1rem;
+        }
+
+        .indicator-value {
+          font-size: 1.25rem;
+        }
 
         .alerts-sidebar {
-          max-height: 400px;
+          max-height: 350px;
         }
       }
 
-      @media (max-width: 640px) {
-        .indicators-grid {
-          grid-template-columns: 1fr;
+      @media (max-width: 480px) {
+        .header-controls {
+          width: 100%;
+          justify-content: space-between;
         }
 
-        .header {
-          flex-direction: column;
-          gap: 1rem;
+        .status-pill span:not(.status-dot) {
+          display: none;
         }
+
+        .indicators-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .notification-popup {
+          left: 10px;
+          right: 10px;
+          max-width: none;
+        }
+      }
+
+      /* ===========================================
+         TELEGRAM CTA
+         =========================================== */
+      .telegram-cta {
+        background: linear-gradient(135deg, rgba(0, 136, 204, 0.1), rgba(0, 136, 204, 0.05));
+        border: 1px solid rgba(0, 136, 204, 0.2);
+        border-radius: var(--radius-lg);
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        text-decoration: none;
+        color: var(--text-primary);
+        transition: all 0.3s;
+      }
+
+      .telegram-cta:hover {
+        background: linear-gradient(135deg, rgba(0, 136, 204, 0.2), rgba(0, 136, 204, 0.1));
+        border-color: rgba(0, 136, 204, 0.4);
+        transform: translateY(-2px);
+      }
+
+      .telegram-icon {
+        width: 40px;
+        height: 40px;
+        background: #0088cc;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+      }
+
+      .telegram-content {
+        flex: 1;
+      }
+
+      .telegram-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.15rem;
+      }
+
+      .telegram-subtitle {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
       }
     </style>
   </head>
@@ -507,21 +741,17 @@
     <!-- Header -->
     <header class="header">
       <div class="logo">
-        <span class="logo-icon">📈</span>
-        <span class="logo-text">Trading Alert Bot</span>
+        <div class="logo-icon">📈</div>
+        <span class="logo-text">BJJ Trader</span>
       </div>
-      <div style="display: flex; gap: 1rem; align-items: center">
-        <button
-          class="sound-toggle active"
-          id="soundToggle"
-          onclick="toggleSound()"
-        >
+      <div class="header-controls">
+        <button class="sound-btn active" id="soundToggle" onclick="toggleSound()">
           <span id="soundIcon">🔔</span>
-          <span id="soundText">Sonido ON</span>
+          <span id="soundText">Sonido</span>
         </button>
-        <div class="status-badge">
+        <div class="status-pill">
           <div class="status-dot"></div>
-          <span id="connectionStatus">Conectado</span>
+          <span id="connectionStatus">En vivo</span>
         </div>
       </div>
     </header>
@@ -531,37 +761,39 @@
       <!-- Chart Section -->
       <section class="chart-section">
         <!-- Symbol Tabs -->
-        <div class="symbol-tabs" id="symbolTabs">
-          <!-- Se llenan dinámicamente -->
+        <div class="symbol-tabs-wrapper">
+          <div class="symbol-tabs" id="symbolTabs"></div>
         </div>
 
-        <!-- Main Chart -->
-        <div class="chart-container">
-          <div id="main-chart"></div>
+        <!-- Chart -->
+        <div class="chart-wrapper">
+          <div class="chart-container">
+            <div id="main-chart"></div>
+          </div>
         </div>
 
-        <!-- Indicators Grid -->
-        <div class="indicators-grid" id="indicatorsGrid">
-          <div class="indicator-card">
+        <!-- Indicators -->
+        <div class="indicators-grid">
+          <div class="glass-card indicator-card">
+            <div class="indicator-icon price">💰</div>
             <div class="indicator-label">Precio</div>
             <div class="indicator-value neutral" id="ind-price">-.-----</div>
             <div class="indicator-subtitle" id="ind-change">-</div>
           </div>
-          <div class="indicator-card">
+          <div class="glass-card indicator-card">
+            <div class="indicator-icon rsi">📊</div>
             <div class="indicator-label">RSI (14)</div>
             <div class="indicator-value neutral" id="ind-rsi">-</div>
-            <div class="indicator-subtitle" id="ind-rsi-status">
-              Calculando...
-            </div>
+            <div class="indicator-subtitle" id="ind-rsi-status">Calculando...</div>
           </div>
-          <div class="indicator-card">
+          <div class="glass-card indicator-card">
+            <div class="indicator-icon macd">📈</div>
             <div class="indicator-label">MACD</div>
             <div class="indicator-value neutral" id="ind-macd">-</div>
-            <div class="indicator-subtitle" id="ind-macd-status">
-              Calculando...
-            </div>
+            <div class="indicator-subtitle" id="ind-macd-status">Calculando...</div>
           </div>
-          <div class="indicator-card">
+          <div class="glass-card indicator-card">
+            <div class="indicator-icon trend">🎯</div>
             <div class="indicator-label">Tendencia</div>
             <div class="indicator-value neutral" id="ind-trend">-</div>
             <div class="indicator-subtitle" id="ind-atr">ATR: -</div>
@@ -571,6 +803,15 @@
 
       <!-- Alerts Sidebar -->
       <aside class="alerts-sidebar">
+        <!-- Telegram CTA -->
+        <a href="https://t.me/BJJTraderAlertas" target="_blank" class="telegram-cta">
+          <div class="telegram-icon">✈️</div>
+          <div class="telegram-content">
+            <div class="telegram-title">Únete al Canal</div>
+            <div class="telegram-subtitle">Recibe alertas en Telegram</div>
+          </div>
+        </a>
+
         <div class="sidebar-header">
           <h2 class="sidebar-title">
             🚨 Alertas
@@ -581,29 +822,24 @@
         <div class="alerts-list" id="alertsList">
           <div class="empty-alerts">
             <div class="empty-icon">📡</div>
-            <p class="empty-text">
-              Esperando señales de trading...<br />El bot está monitoreando los
-              mercados.
-            </p>
+            <p class="empty-title">Esperando señales...</p>
+            <p class="empty-text">El bot está analizando los mercados en tiempo real</p>
           </div>
         </div>
       </aside>
     </main>
 
-    <!-- Container for popup notifications -->
+    <!-- Notification Container -->
     <div id="notificationContainer"></div>
 
-    <!-- Audio for alerts -->
+    <!-- Audio -->
     <audio id="alertSound" preload="auto">
-      <source
-        src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleW1RYHGQa2NiWmJra2hVb4N7f4aWoqaieqdofmNUWW93bGhnZ3N1aV5nb4aBfIF/gYqJkI2GfWdaUFeHlZSLfHZ3dGpnb3V0eIF6bmpoeXd4gYmQlJOahXVkYmN6i5iYmZGOkZ6koaSak4V0amJfZ3R3c25qbHBwdHh3dnt4c3N3gIiFhoWBenVydnh1bXB1d3l9e3l/g4F8eHl8gn15cXFyc3R3fXx5enl2cnF1fIKEhYmKg3t4dXZ5f4B+d3d3eHl4dnV4en19e3h4en+DhISEgXt3dXZ6fX18eXh4eHd4eXp7e3t5eHl7fX5/gH99enh4eXt7e3t6eXh4eHl5eXp6enp6enp7fH19fX59fHt7e3t7e3t7e3t7e3t7e3t7fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8"
-        type="audio/wav"
-      />
+      <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleW1RYHGQa2NiWmJra2hVb4N7f4aWoqaieqdofmNUWW93bGhnZ3N1aV5nb4aBfIF/gYqJkI2GfWdaUFeHlZSLfHZ3dGpnb3V0eIF6bmpoeXd4gYmQlJOahXVkYmN6i5iYmZGOkZ6koaSak4V0amJfZ3R3c25qbHBwdHh3dnt4c3N3gIiFhoWBenVydnh1bXB1d3l9e3l/g4F8eHl8gn15cXFyc3R3fXx5enl2cnF1fIKEhYmKg3t4dXZ5f4B+d3d3eHl4dnV4en19e3h4en+DhISEgXt3dXZ6fX18eXh4eHd4eXp7e3t5eHl7fX5/gH99enh4eXt7e3t6eXh4eHl5eXp6enp6enp7fH19fX59fHt7e3t7e3t7e3t7e3t7e3t7fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8" type="audio/wav" />
     </audio>
 
     <script>
       // ===========================================
-      // CONFIGURACIÓN Y ESTADO
+      // STATE & CONFIG
       // ===========================================
       let socket;
       let chart;
@@ -613,20 +849,16 @@
       let currentSymbol = "EURUSD=X";
       let soundEnabled = true;
       let alerts = [];
-      let chartData = {};
 
-      // Símbolos disponibles - Principales pares del mundo
       const symbols = [
-        // Major Pairs
         "EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDCHF=X",
         "AUDUSD=X", "USDCAD=X", "NZDUSD=X",
-        // Cross Pairs
         "EURGBP=X", "EURJPY=X", "GBPJPY=X", "AUDJPY=X",
         "EURAUD=X", "EURCHF=X", "GBPCHF=X"
       ];
 
       // ===========================================
-      // INICIALIZACIÓN
+      // INITIALIZATION
       // ===========================================
       document.addEventListener("DOMContentLoaded", () => {
         initChart();
@@ -635,7 +867,7 @@
       });
 
       // ===========================================
-      // GRÁFICO CON TRADINGVIEW LIGHTWEIGHT CHARTS
+      // CHART
       // ===========================================
       function initChart() {
         const container = document.getElementById("main-chart");
@@ -644,66 +876,57 @@
           width: container.clientWidth,
           height: container.clientHeight,
           layout: {
-            background: { type: "solid", color: "#161b22" },
-            textColor: "#8b949e",
+            background: { type: "solid", color: "#12171f" },
+            textColor: "rgba(255, 255, 255, 0.5)",
           },
           grid: {
-            vertLines: { color: "#21262d" },
-            horzLines: { color: "#21262d" },
+            vertLines: { color: "rgba(255, 255, 255, 0.03)" },
+            horzLines: { color: "rgba(255, 255, 255, 0.03)" },
           },
           crosshair: {
             mode: LightweightCharts.CrosshairMode.Normal,
+            vertLine: { color: "rgba(99, 102, 241, 0.3)", width: 1, style: 2 },
+            horzLine: { color: "rgba(99, 102, 241, 0.3)", width: 1, style: 2 },
           },
-          rightPriceScale: {
-            borderColor: "#30363d",
-          },
-          timeScale: {
-            borderColor: "#30363d",
-            timeVisible: true,
-          },
+          rightPriceScale: { borderColor: "rgba(255, 255, 255, 0.1)" },
+          timeScale: { borderColor: "rgba(255, 255, 255, 0.1)", timeVisible: true },
         });
 
-        // Serie de velas japonesas
         candlestickSeries = chart.addCandlestickSeries({
-          upColor: "#3fb950",
-          downColor: "#f85149",
-          borderUpColor: "#3fb950",
-          borderDownColor: "#f85149",
-          wickUpColor: "#3fb950",
-          wickDownColor: "#f85149",
+          upColor: "#10b981",
+          downColor: "#ef4444",
+          borderUpColor: "#10b981",
+          borderDownColor: "#ef4444",
+          wickUpColor: "#10b981",
+          wickDownColor: "#ef4444",
         });
 
-        // EMA 12 (rápida)
         ema12Series = chart.addLineSeries({
-          color: "#58a6ff",
+          color: "#6366f1",
           lineWidth: 2,
           title: "EMA 12",
         });
 
-        // EMA 26 (lenta)
         ema26Series = chart.addLineSeries({
-          color: "#a371f7",
+          color: "#a855f7",
           lineWidth: 2,
           title: "EMA 26",
         });
 
-        // Ajustar tamaño al redimensionar ventana
         window.addEventListener("resize", () => {
           chart.resize(container.clientWidth, container.clientHeight);
         });
       }
 
       // ===========================================
-      // TABS DE SÍMBOLOS
+      // SYMBOL TABS
       // ===========================================
       function initSymbolTabs() {
         const tabsContainer = document.getElementById("symbolTabs");
 
         symbols.forEach((symbol) => {
           const tab = document.createElement("button");
-          tab.className = `symbol-tab ${
-            symbol === currentSymbol ? "active" : ""
-          }`;
+          tab.className = `symbol-tab ${symbol === currentSymbol ? "active" : ""}`;
           tab.textContent = symbol.replace("=X", "");
           tab.onclick = () => selectSymbol(symbol);
           tabsContainer.appendChild(tab);
@@ -713,78 +936,61 @@
       function selectSymbol(symbol) {
         currentSymbol = symbol;
 
-        // Actualizar tabs
         document.querySelectorAll(".symbol-tab").forEach((tab) => {
-          tab.classList.toggle(
-            "active",
-            tab.textContent === symbol.replace("=X", "")
-          );
+          tab.classList.toggle("active", tab.textContent === symbol.replace("=X", ""));
         });
 
-        // Solicitar datos del nuevo símbolo
         if (socket && socket.connected) {
           socket.emit("request_data", { symbol: symbol });
         }
       }
 
       // ===========================================
-      // WEBSOCKET PARA TIEMPO REAL
+      // WEBSOCKET
       // ===========================================
       function initSocket() {
         socket = io();
 
         socket.on("connect", () => {
-          console.log("✅ Conectado al servidor");
           updateConnectionStatus(true);
           socket.emit("request_data", { symbol: currentSymbol });
         });
 
-        socket.on("disconnect", () => {
-          console.log("❌ Desconectado del servidor");
-          updateConnectionStatus(false);
-        });
-
-        // Recibir datos del gráfico
-        socket.on("chart_data", (data) => {
-          updateChart(data);
-        });
-
-        // Recibir indicadores
-        socket.on("indicators", (data) => {
-          updateIndicators(data);
-        });
-
-        // Recibir alertas
-        socket.on("new_alert", (alert) => {
-          handleNewAlert(alert);
-        });
-
-        // Recibir actualización de precio
-        socket.on("price_update", (data) => {
-          updatePrice(data);
-        });
+        socket.on("disconnect", () => updateConnectionStatus(false));
+        socket.on("chart_data", updateChart);
+        socket.on("indicators", updateIndicators);
+        socket.on("new_alert", handleNewAlert);
+        socket.on("price_update", updatePrice);
       }
 
       function updateConnectionStatus(connected) {
         const statusEl = document.getElementById("connectionStatus");
         const dotEl = document.querySelector(".status-dot");
+        const pillEl = document.querySelector(".status-pill");
 
         if (connected) {
-          statusEl.textContent = "Conectado";
-          dotEl.style.background = "#3fb950";
+          statusEl.textContent = "En vivo";
+          dotEl.style.background = "#10b981";
+          dotEl.style.boxShadow = "0 0 8px #10b981";
+          pillEl.style.borderColor = "rgba(16, 185, 129, 0.2)";
+          pillEl.style.background = "rgba(16, 185, 129, 0.1)";
+          pillEl.style.color = "#10b981";
         } else {
           statusEl.textContent = "Desconectado";
-          dotEl.style.background = "#f85149";
+          dotEl.style.background = "#ef4444";
+          dotEl.style.boxShadow = "0 0 8px #ef4444";
+          pillEl.style.borderColor = "rgba(239, 68, 68, 0.2)";
+          pillEl.style.background = "rgba(239, 68, 68, 0.1)";
+          pillEl.style.color = "#ef4444";
         }
       }
 
       // ===========================================
-      // ACTUALIZAR GRÁFICO
+      // UPDATE CHART
       // ===========================================
       function updateChart(data) {
         if (!data || !data.candles) return;
 
-        // Convertir datos al formato de Lightweight Charts
         const candles = data.candles.map((c) => ({
           time: c.time,
           open: c.open,
@@ -794,260 +1000,173 @@
         }));
 
         const ema12Data = data.ema12
-          .map((v, i) => ({
-            time: data.candles[i].time,
-            value: v,
-          }))
+          .map((v, i) => ({ time: data.candles[i].time, value: v }))
           .filter((d) => d.value !== null);
 
         const ema26Data = data.ema26
-          .map((v, i) => ({
-            time: data.candles[i].time,
-            value: v,
-          }))
+          .map((v, i) => ({ time: data.candles[i].time, value: v }))
           .filter((d) => d.value !== null);
 
         candlestickSeries.setData(candles);
         ema12Series.setData(ema12Data);
         ema26Series.setData(ema26Data);
-
         chart.timeScale().fitContent();
       }
 
       // ===========================================
-      // ACTUALIZAR INDICADORES
+      // UPDATE INDICATORS
       // ===========================================
       function updateIndicators(data) {
-        // Precio
         const priceEl = document.getElementById("ind-price");
         priceEl.textContent = data.price.toFixed(5);
-        priceEl.className =
-          "indicator-value " + (data.change >= 0 ? "bullish" : "bearish");
+        priceEl.className = "indicator-value " + (data.change >= 0 ? "bullish" : "bearish");
 
-        document.getElementById("ind-change").textContent = `${
-          data.change >= 0 ? "+" : ""
-        }${data.change.toFixed(4)} (${data.changePercent.toFixed(2)}%)`;
+        document.getElementById("ind-change").textContent = `${data.change >= 0 ? "+" : ""}${data.change.toFixed(4)} (${data.changePercent.toFixed(2)}%)`;
 
-        // RSI
         const rsiEl = document.getElementById("ind-rsi");
         rsiEl.textContent = data.rsi.toFixed(2);
 
         let rsiClass = "neutral";
         let rsiStatus = "Neutral";
-        if (data.rsi < 30) {
-          rsiClass = "bullish";
-          rsiStatus = "🔵 Sobreventa";
-        } else if (data.rsi > 70) {
-          rsiClass = "bearish";
-          rsiStatus = "🔴 Sobrecompra";
-        }
+        if (data.rsi < 30) { rsiClass = "bullish"; rsiStatus = "🔵 Sobreventa"; }
+        else if (data.rsi > 70) { rsiClass = "bearish"; rsiStatus = "🔴 Sobrecompra"; }
         rsiEl.className = "indicator-value " + rsiClass;
         document.getElementById("ind-rsi-status").textContent = rsiStatus;
 
-        // MACD
         const macdEl = document.getElementById("ind-macd");
         macdEl.textContent = data.macd.toFixed(6);
-        macdEl.className =
-          "indicator-value " +
-          (data.macd > data.macdSignal ? "bullish" : "bearish");
-        document.getElementById("ind-macd-status").textContent =
-          data.macd > data.macdSignal ? "📈 Alcista" : "📉 Bajista";
+        macdEl.className = "indicator-value " + (data.macd > data.macdSignal ? "bullish" : "bearish");
+        document.getElementById("ind-macd-status").textContent = data.macd > data.macdSignal ? "📈 Alcista" : "📉 Bajista";
 
-        // Tendencia
         const trendEl = document.getElementById("ind-trend");
         const isBullish = data.ema12 > data.ema26;
         trendEl.textContent = isBullish ? "↗️ ALCISTA" : "↘️ BAJISTA";
-        trendEl.className =
-          "indicator-value " + (isBullish ? "bullish" : "bearish");
-        document.getElementById(
-          "ind-atr"
-        ).textContent = `ATR: ${data.atr.toFixed(5)}`;
+        trendEl.className = "indicator-value " + (isBullish ? "bullish" : "bearish");
+        document.getElementById("ind-atr").textContent = `ATR: ${data.atr.toFixed(5)}`;
       }
 
       function updatePrice(data) {
         if (data.symbol !== currentSymbol) return;
-
-        const priceEl = document.getElementById("ind-price");
-        priceEl.textContent = data.price.toFixed(5);
+        document.getElementById("ind-price").textContent = data.price.toFixed(5);
       }
 
       // ===========================================
-      // MANEJAR ALERTAS
+      // HANDLE ALERTS
       // ===========================================
       function handleNewAlert(alert) {
-        // Añadir a la lista
         alerts.unshift(alert);
         if (alerts.length > 50) alerts.pop();
 
-        // Actualizar UI
-        renderAlerts();
-
-        // Mostrar notificación popup
+        updateAlertsList();
         showNotification(alert);
 
-        // Reproducir sonido
         if (soundEnabled) {
-          playAlertSound();
+          document.getElementById("alertSound").play().catch(() => {});
         }
       }
 
-      function renderAlerts() {
-        const container = document.getElementById("alertsList");
+      function updateAlertsList() {
+        const listEl = document.getElementById("alertsList");
         const countEl = document.getElementById("alertCount");
 
         countEl.textContent = alerts.length;
 
         if (alerts.length === 0) {
-          container.innerHTML = `
-                    <div class="empty-alerts">
-                        <div class="empty-icon">📡</div>
-                        <p class="empty-text">Esperando señales de trading...<br>El bot está monitoreando los mercados.</p>
-                    </div>
-                `;
+          listEl.innerHTML = `
+            <div class="empty-alerts">
+              <div class="empty-icon">📡</div>
+              <p class="empty-title">Esperando señales...</p>
+              <p class="empty-text">El bot está analizando los mercados en tiempo real</p>
+            </div>
+          `;
           return;
         }
 
-        container.innerHTML = alerts
-          .map(
-            (alert) => `
-                <div class="alert-card ${
-                  alert.type === "COMPRA" ? "buy" : "sell"
-                }">
-                    <div class="alert-header">
-                        <div>
-                            <div class="alert-type ${
-                              alert.type === "COMPRA" ? "buy" : "sell"
-                            }">
-                                ${alert.type === "COMPRA" ? "🟢" : "🔴"} ${
-              alert.type
-            }
-                            </div>
-                            <div class="alert-symbol">${alert.symbol.replace(
-                              "=X",
-                              ""
-                            )}</div>
-                        </div>
-                        <div class="alert-time">${alert.time}</div>
-                    </div>
-                    <div class="alert-reason">${alert.reason}</div>
-                    <div class="alert-levels">
-                        <div class="level-item">
-                            <div class="level-label">Precio</div>
-                            <div class="level-value price">${alert.price.toFixed(
-                              5
-                            )}</div>
-                        </div>
-                        <div class="level-item">
-                            <div class="level-label">Stop Loss</div>
-                            <div class="level-value sl">${alert.stopLoss.toFixed(
-                              5
-                            )}</div>
-                        </div>
-                        <div class="level-item">
-                            <div class="level-label">Take Profit</div>
-                            <div class="level-value tp">${alert.takeProfit.toFixed(
-                              5
-                            )}</div>
-                        </div>
-                    </div>
-                </div>
-            `
-          )
-          .join("");
+        listEl.innerHTML = alerts.map((a) => `
+          <div class="glass-card alert-card ${a.type === 'COMPRA' ? 'buy' : 'sell'}">
+            <div class="alert-header">
+              <div>
+                <span class="alert-badge ${a.type === 'COMPRA' ? 'buy' : 'sell'}">
+                  ${a.type === 'COMPRA' ? '🟢 COMPRA' : '🔴 VENTA'}
+                </span>
+                <div class="alert-symbol">${a.symbol.replace('=X', '')}</div>
+              </div>
+              <span class="alert-time">${a.time}</span>
+            </div>
+            <div class="alert-reason">${a.reason}</div>
+            <div class="alert-levels">
+              <div class="level-item">
+                <div class="level-label">Entrada</div>
+                <div class="level-value price">${a.price.toFixed(5)}</div>
+              </div>
+              <div class="level-item">
+                <div class="level-label">Stop Loss</div>
+                <div class="level-value sl">${a.stopLoss.toFixed(5)}</div>
+              </div>
+              <div class="level-item">
+                <div class="level-label">Take Profit</div>
+                <div class="level-value tp">${a.takeProfit.toFixed(5)}</div>
+              </div>
+            </div>
+          </div>
+        `).join("");
       }
 
       function showNotification(alert) {
         const container = document.getElementById("notificationContainer");
+        const id = "notif-" + Date.now();
 
-        const notification = document.createElement("div");
-        notification.className = `alert-notification ${
-          alert.type === "COMPRA" ? "buy" : "sell"
-        }`;
-        notification.innerHTML = `
-                <button class="notification-close" onclick="this.parentElement.remove()">×</button>
-                <div class="notification-title ${
-                  alert.type === "COMPRA" ? "buy" : "sell"
-                }">
-                    ${alert.type === "COMPRA" ? "🟢" : "🔴"} ${
-          alert.type
-        } - ${alert.symbol.replace("=X", "")}
-                </div>
-                <div class="alert-reason">${alert.reason}</div>
-                <div class="alert-levels" style="margin-top: 1rem;">
-                    <div class="level-item">
-                        <div class="level-label">Precio</div>
-                        <div class="level-value price">${alert.price.toFixed(
-                          5
-                        )}</div>
-                    </div>
-                    <div class="level-item">
-                        <div class="level-label">Stop Loss</div>
-                        <div class="level-value sl">${alert.stopLoss.toFixed(
-                          5
-                        )}</div>
-                    </div>
-                    <div class="level-item">
-                        <div class="level-label">Take Profit</div>
-                        <div class="level-value tp">${alert.takeProfit.toFixed(
-                          5
-                        )}</div>
-                    </div>
-                </div>
-            `;
+        const notifHtml = `
+          <div id="${id}" class="notification-popup glass ${alert.type === 'COMPRA' ? 'buy' : 'sell'}">
+            <button class="notification-close" onclick="closeNotification('${id}')">&times;</button>
+            <div class="notification-title ${alert.type === 'COMPRA' ? 'buy' : 'sell'}">
+              ${alert.type === 'COMPRA' ? '🟢 SEÑAL DE COMPRA' : '🔴 SEÑAL DE VENTA'}
+            </div>
+            <div class="alert-symbol" style="margin-bottom: 0.5rem">${alert.symbol.replace('=X', '')}</div>
+            <div class="alert-reason">${alert.reason}</div>
+            <div class="alert-levels" style="margin-top: 0.75rem">
+              <div class="level-item">
+                <div class="level-label">Entrada</div>
+                <div class="level-value price">${alert.price.toFixed(5)}</div>
+              </div>
+              <div class="level-item">
+                <div class="level-label">SL</div>
+                <div class="level-value sl">${alert.stopLoss.toFixed(5)}</div>
+              </div>
+              <div class="level-item">
+                <div class="level-label">TP</div>
+                <div class="level-value tp">${alert.takeProfit.toFixed(5)}</div>
+              </div>
+            </div>
+          </div>
+        `;
 
-        container.appendChild(notification);
+        container.innerHTML = notifHtml;
+        setTimeout(() => closeNotification(id), 8000);
+      }
 
-        // Remover después de 10 segundos
-        setTimeout(() => {
-          notification.remove();
-        }, 10000);
+      function closeNotification(id) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
       }
 
       // ===========================================
-      // SONIDO
+      // SOUND TOGGLE
       // ===========================================
       function toggleSound() {
         soundEnabled = !soundEnabled;
-
-        const toggle = document.getElementById("soundToggle");
+        const btn = document.getElementById("soundToggle");
         const icon = document.getElementById("soundIcon");
         const text = document.getElementById("soundText");
 
         if (soundEnabled) {
-          toggle.classList.add("active");
+          btn.classList.add("active");
           icon.textContent = "🔔";
-          text.textContent = "Sonido ON";
+          text.textContent = "Sonido";
         } else {
-          toggle.classList.remove("active");
+          btn.classList.remove("active");
           icon.textContent = "🔕";
-          text.textContent = "Sonido OFF";
-        }
-      }
-
-      function playAlertSound() {
-        // Crear un sonido de alerta usando Web Audio API
-        try {
-          const audioContext = new (window.AudioContext ||
-            window.webkitAudioContext)();
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-
-          oscillator.frequency.value = 800;
-          oscillator.type = "sine";
-
-          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(
-            0.01,
-            audioContext.currentTime + 0.5
-          );
-
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 0.5);
-        } catch (e) {
-          console.log("No se pudo reproducir sonido:", e);
+          text.textContent = "Mute";
         }
       }
     </script>
