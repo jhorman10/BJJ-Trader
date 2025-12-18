@@ -21,7 +21,7 @@ app = Flask(__name__)
 CORS(app) # Enable CORS for all routes
 app.config['SECRET_KEY'] = 'secret_key_bjj_trader_secure'
 # Using default async_mode (threading) for compatibility with Python 3.13+ and simple deployment
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Global Orchestrator (Singleton-ish for this simple app)
 config = Config()
