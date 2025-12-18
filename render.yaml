@@ -27,7 +27,7 @@ staticSites:
   - name: bjj-trader
     rootDir: frontend
     buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+    publishPath: ./dist
     # Routes / Rewrites to link Frontend -> Backend on the same domain
     routes:
       - type: rewrite
