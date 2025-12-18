@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, jsonify, request
 from flask_socketio import SocketIO
 import threading
 import time
@@ -16,21 +16,8 @@ from src.infrastructure.notification import TelegramAdapter
 from src.domain.services import TechnicalAnalysisService
 from src.application.services import TradingOrchestrator
 
-# Setup Flask
-app_dir = os.path.dirname(os.path.abspath(__file__))
-# Path to the frontend build directory (relative to this file)
-# app.py is in src/presentation/web
-# frontend is in root/frontend
-project_root = os.path.abspath(os.path.join(app_dir, '../../../'))
-dist_dir = os.path.join(project_root, 'frontend', 'dist')
-
-from flask_cors import CORS
-
-app = Flask(__name__, static_folder=os.path.join(dist_dir, 'assets'), static_url_path='/assets', template_folder=dist_dir)
+app = Flask(__name__)
 CORS(app) # Enable CORS for all routes
-# Serve static files from root dist for files like favicon, etc if needed, 
-# but mostly Flask handles static_folder for /static url. 
-# We might need a catch-all route later if using React Router, but for now single page.
 app.config['SECRET_KEY'] = 'secret_key_bjj_trader_secure'
 # Using default async_mode (threading) for compatibility with Python 3.13+ and simple deployment
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
@@ -89,21 +76,9 @@ bot_service.register_on_indicator(on_indicators_update)
 
 # Routes
 @app.route('/')
-def index():
-    return render_template('index.html')
+def home():
+    return jsonify({"status": "healthy", "service": "BJJ Trader API"})
 
-@app.route('/<path:path>')
-def static_proxy(path):
-    # Avoid intercepting socket.io requests
-    if path.startswith('socket.io') or 'transport=' in request.args:
-        return
-    
-    # Try to serve file from dist directory (e.g. favicon.ico, vite.svg)
-    try:
-        return send_from_directory(dist_dir, path)
-    except:
-        # If not found, fall back to index.html for SPA routing
-        return render_template('index.html')
 
 
 @socketio.on('connect')
