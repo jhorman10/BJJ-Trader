@@ -22,9 +22,7 @@ services:
       - key: PYTHON_VERSION
         value: "3.11"
 
-  # -------------------------------------
-  # 2. Frontend Service (React Static Site)
-  # -------------------------------------
+# 2. Frontend Service (React Static Site)
 staticSites:
   - name: bjj-trader
     rootDir: frontend
