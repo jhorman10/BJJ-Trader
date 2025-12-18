@@ -10,8 +10,10 @@ services:
   - type: web
     name: bjj-trader-api
     env: python
+    region: oregon
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn --worker-class eventlet -w 1 src.main:app --bind 0.0.0.0:$PORT
+    startCommand: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT src.presentation.web.app:app
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         sync: false
@@ -25,6 +27,8 @@ services:
 # 2. Frontend Service (React Static Site)
 staticSites:
   - name: bjj-trader
+    region: oregon
+    plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
     publishPath: ./dist
