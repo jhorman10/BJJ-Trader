@@ -113,7 +113,14 @@ def handle_data_request(data):
     socketio.emit('chart_data', chart_payload)
 
     # Trigger analysis to send immediate indicator state (WITHOUT external notification)
-    orchestrator.analyze_symbol(symbol, notify_external=False)
+    result = orchestrator.analyze_symbol(symbol, notify_external=False)
+    
+    if result.indicators:
+        indicator_payload = result.indicators
+        indicator_payload['price'] = result.current_price
+        indicator_payload['change'] = 0.0 
+        indicator_payload['changePercent'] = 0.0
+        socketio.emit('indicators', indicator_payload)
 
 # Main Entry Point
 if __name__ == '__main__':
