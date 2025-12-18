@@ -23,7 +23,7 @@ export class SocketService implements IMarketStream {
   connect(symbol: string): void {
     if (!this.socket) {
       this.socket = io(SOCKET_URL, {
-        transports: ["websocket"],
+        transports: ["polling", "websocket"],
       });
 
       this.socket.on("connect", () => {
