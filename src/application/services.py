@@ -1,4 +1,5 @@
 from typing import List, Dict, Any
+import pandas as pd
 from src.domain.interfaces import IMarketDataProvider, INotifier
 from src.domain.services import TechnicalAnalysisService
 from src.domain.entities import Signal, AnalysisResult
