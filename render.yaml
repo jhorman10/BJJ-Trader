@@ -26,14 +26,14 @@ services:
     staticPublishPath: ./frontend/dist
     envVars:
       - key: VITE_BACKEND_URL
-        value: "https://bjj-trader-api.onrender.com"
+        value: "https://bjj-trader.onrender.com"
     routes:
       - type: rewrite
         source: /socket.io/*
-        destination: https://bjj-trader-api.onrender.com/socket.io/*
+        destination: https://bjj-trader.onrender.com/socket.io/*
       - type: rewrite
         source: /api/*
-        destination: https://bjj-trader-api.onrender.com/api/*
+        destination: https://bjj-trader.onrender.com/api/*
       - type: rewrite
         source: /*
         destination: /index.html
