@@ -6,7 +6,6 @@ services:
   - name: bjj-trader-api
     type: web
     env: python
-    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT src.presentation.web.app:app
     envVars:
@@ -23,7 +22,6 @@ services:
   - name: bjj-trader
     type: web
     env: static
-    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     routes:
