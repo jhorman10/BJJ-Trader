@@ -45,6 +45,10 @@ class TechnicalAnalysisService:
         df['EMA_Fast'] = ta.ema(df['Close'], length=ema_fast)
         df['EMA_Slow'] = ta.ema(df['Close'], length=ema_slow)
         
+        # EMA Trend (Expert Filter)
+        ema_trend_len = self.config.get('EMA_TREND', 200)
+        df['EMA_Trend'] = ta.ema(df['Close'], length=ema_trend_len)
+        
         # ATR
         df['ATR'] = ta.atr(df['High'], df['Low'], df['Close'], length=atr_period)
         
@@ -73,27 +77,44 @@ class TechnicalAnalysisService:
            'macd_hist': float(curr['MACD_Histogram']) if pd.notna(curr['MACD_Histogram']) else 0.0,
            'time': datetime.now().strftime('%H:%M:%S')
         }
+        
+        # Expert Filters State
+        price = curr['Close']
+        ema_trend = curr.get('EMA_Trend', None)
+        rsi = curr.get('RSI', 50)
+        
+        trend_bullish = pd.notna(ema_trend) and price > ema_trend
+        trend_bearish = pd.notna(ema_trend) and price < ema_trend
 
-        # --- RSI Signals ---
+        # --- RSI Signals (Standard) ---
         if alert_on_rsi and pd.notna(curr['RSI']) and pd.notna(prev['RSI']):
             if prev['RSI'] < rsi_oversold and curr['RSI'] >= rsi_oversold:
                 signals.append(self._create_signal(symbol, 'COMPRA', 'RSI', f"RSI saliendo de sobreventa ({curr['RSI']:.1f})", 'MODERADA', **common_data))
             elif prev['RSI'] > rsi_overbought and curr['RSI'] <= rsi_overbought:
                 signals.append(self._create_signal(symbol, 'VENTA', 'RSI', f"RSI saliendo de sobrecompra ({curr['RSI']:.1f})", 'MODERADA', **common_data))
 
-        # --- MACD Signals ---
+        # --- MACD Signals (Standard) ---
         if alert_on_macd and pd.notna(curr['MACD']) and pd.notna(prev['MACD']):
             if prev['MACD'] <= prev['MACD_Signal'] and curr['MACD'] > curr['MACD_Signal']:
                 signals.append(self._create_signal(symbol, 'COMPRA', 'MACD', "Cruce alcista MACD", 'FUERTE', **common_data))
             elif prev['MACD'] >= prev['MACD_Signal'] and curr['MACD'] < curr['MACD_Signal']:
                 signals.append(self._create_signal(symbol, 'VENTA', 'MACD', "Cruce bajista MACD", 'FUERTE', **common_data))
 
-        # --- EMA Signals ---
+        # --- Expert EMA Signals (Filtered) ---
         if alert_on_ma and pd.notna(curr['EMA_Fast']) and pd.notna(prev['EMA_Fast']):
+            # Bullish Cross
             if prev['EMA_Fast'] <= prev['EMA_Slow'] and curr['EMA_Fast'] > curr['EMA_Slow']:
-                signals.append(self._create_signal(symbol, 'COMPRA', 'EMA Cross', "Cruce Dorado (EMA)", 'FUERTE', **common_data))
+                # Filter 1: Trend (Price > EMA 200)
+                # Filter 2: Strength (RSI > 50)
+                if trend_bullish and rsi > 50:
+                    signals.append(self._create_signal(symbol, 'COMPRA', 'PRO STRATEGY', "Cruce Dorado + Tendencia + RSI > 50", 'MUY FUERTE', **common_data))
+            
+            # Bearish Cross
             elif prev['EMA_Fast'] >= prev['EMA_Slow'] and curr['EMA_Fast'] < curr['EMA_Slow']:
-                signals.append(self._create_signal(symbol, 'VENTA', 'EMA Cross', "Cruce de la Muerte (EMA)", 'FUERTE', **common_data))
+                # Filter 1: Trend (Price < EMA 200)
+                # Filter 2: Strength (RSI < 50)
+                if trend_bearish and rsi < 50:
+                    signals.append(self._create_signal(symbol, 'VENTA', 'PRO STRATEGY', "Cruce Muerte + Tendencia + RSI < 50", 'MUY FUERTE', **common_data))
 
         return signals
 

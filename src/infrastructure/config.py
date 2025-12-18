@@ -31,6 +31,7 @@ class Config:
     SMA_SLOW = 50
     EMA_FAST = 12
     EMA_SLOW = 26
+    EMA_TREND = 200
     
     ATR_PERIOD = 14
     
