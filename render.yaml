@@ -1,0 +1,20 @@
+# ===========================================
+# CONFIGURACIÓN DE RENDER
+# ===========================================
+# Este archivo configura el despliegue automático en Render
+
+services:
+  - type: web
+    name: bjj-trader
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --worker-class eventlet -w 1 dashboard:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: TELEGRAM_ENABLED
+        value: "true"
+      - key: PYTHON_VERSION
+        value: "3.11"

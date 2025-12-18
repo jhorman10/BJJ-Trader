@@ -1,0 +1,40 @@
+# ===========================================
+# Bot de Alertas de Trading - Dependencias
+# ===========================================
+# Instalar con: pip install -r requirements.txt
+
+# Manipulación de datos
+pandas>=2.0.0
+
+# Indicadores técnicos (alternativa gratuita a TA-Lib)
+# No requiere compilación C, funciona directamente
+pandas-ta>=0.3.14b
+
+# Obtención de datos de mercado (gratuito, sin API key)
+yfinance>=0.2.0
+
+# Programación de tareas (opcional, para ejecución periódica)
+schedule>=1.2.0
+
+# ===========================================
+# Interfaz Gráfica Web en Tiempo Real
+# ===========================================
+# Framework web ligero
+flask>=3.0.0
+
+# WebSockets para actualizaciones en tiempo real
+flask-socketio>=5.3.0
+
+# Motor asíncrono para WebSockets
+eventlet>=0.35.0
+
+# ===========================================
+# Notificaciones de Telegram
+# ===========================================
+python-telegram-bot>=21.0
+requests>=2.31.0
+
+# ===========================================
+# Servidor de producción
+# ===========================================
+gunicorn>=21.0
