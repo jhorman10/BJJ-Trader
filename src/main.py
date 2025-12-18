@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from src.presentation.web.app import app, socketio, bot_service
 import threading
 
