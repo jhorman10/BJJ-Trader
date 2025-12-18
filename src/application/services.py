@@ -42,9 +42,14 @@ class TradingOrchestrator:
         # Detect Signals (Domain Service)
         signals = self.analysis_service.detect_signals(symbol, df_indicators)
         
+        # Debug: Log signal detection
+        if signals:
+            print(f"🎯 Orchestrator detected {len(signals)} signals for {symbol}")
+        
         # Process Signals (Application Logic)
         for signal in signals:
             if self.config.TELEGRAM_ENABLED and notify_external:
+                print(f"  📨 Sending to Telegram: {signal.symbol} {signal.type}")
                 self.notifier.send_alert(signal)
             # You could add persistency here (Save to DB) if needed
         
