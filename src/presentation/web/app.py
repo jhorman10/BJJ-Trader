@@ -11,6 +11,8 @@ import sys
 
 # Injection Imports
 from src.infrastructure.config import Config
+from src.infrastructure.market_data import YFinanceAdapter
+from src.infrastructure.notification import TelegramAdapter
 from src.domain.services import TechnicalAnalysisService
 from src.application.services import TradingOrchestrator
 from flask_cors import CORS
