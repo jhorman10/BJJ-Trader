@@ -53,7 +53,10 @@ class SignalBotService:
                     # 2. Emit Real-time Events (Application -> Presentation via callbacks)
                     
                     # Signals
+                    if result.signals:
+                        print(f"📢 Bot Service found {len(result.signals)} signals for {symbol}")
                     for signal in result.signals:
+                        print(f"  ➡️ Calling {len(self._on_signal_callbacks)} signal callbacks for {signal.symbol} {signal.type}")
                         for cb in self._on_signal_callbacks:
                             cb(signal)
                     
