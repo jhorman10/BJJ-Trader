@@ -52,9 +52,14 @@ def on_new_signal(s):
         'atr': s.atr,
         'rsi': s.rsi,
         'macd_hist': s.macd_hist,
-        'expiration': s.expiration
+        'expiration': s.expiration,
+        # TradingView confirmation data
+        'tvRecommendation': s.tv_recommendation,
+        'tvConfidence': s.tv_confidence,
+        'tvBuySignals': s.tv_buy_signals,
+        'tvSellSignals': s.tv_sell_signals
     }
-    print(f"📡 Emitting new_alert to socket: {s.symbol} {s.type}")
+    print(f"📡 Emitting new_alert to socket: {s.symbol} {s.type} (TV: {s.tv_recommendation})")
     socketio.emit('new_alert', alert_payload)
 
 def on_price_update(symbol, price):

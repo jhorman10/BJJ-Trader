@@ -144,7 +144,7 @@ export const SignalAlerts = memo(({ signals }: SignalAlertsProps) => {
                       </div>
 
                       {/* Block 3: Context */}
-                      <div>
+                      <div className="mb-3">
                         <div className="d-flex align-items-center gap-2 mb-1">
                           <span>📈</span>
                           <span className="fw-bold text-light">CONTEXTO:</span>
@@ -170,6 +170,62 @@ export const SignalAlerts = memo(({ signals }: SignalAlertsProps) => {
                           </div>
                         </div>
                       </div>
+
+                      {/* Block 4: TradingView Confirmation */}
+                      {signal.tvRecommendation && (
+                        <div>
+                          <div className="d-flex align-items-center gap-2 mb-1">
+                            <span>📺</span>
+                            <span className="fw-bold text-light">
+                              TRADINGVIEW:
+                            </span>
+                          </div>
+                          <div className="ps-3 border-start border-secondary border-opacity-25">
+                            <div className="d-flex gap-2 align-items-center">
+                              <span className="text-light">
+                                • Recomendación:
+                              </span>
+                              <span
+                                className={`badge ${
+                                  signal.tvRecommendation?.includes("BUY")
+                                    ? "bg-success"
+                                    : signal.tvRecommendation?.includes("SELL")
+                                    ? "bg-danger"
+                                    : "bg-secondary"
+                                }`}
+                              >
+                                {signal.tvRecommendation}
+                              </span>
+                            </div>
+                            <div className="d-flex gap-2">
+                              <span className="text-light">• Confianza:</span>
+                              <span
+                                className={`font-monospace ${
+                                  signal.tvConfidence === "ALTA"
+                                    ? "text-success"
+                                    : signal.tvConfidence === "MEDIA"
+                                    ? "text-warning"
+                                    : "text-secondary"
+                                }`}
+                              >
+                                {signal.tvConfidence || "N/A"}
+                              </span>
+                            </div>
+                            <div className="d-flex gap-2">
+                              <span className="text-light">• Señales:</span>
+                              <span className="font-monospace">
+                                <span className="text-success">
+                                  {signal.tvBuySignals || 0} 🟢
+                                </span>
+                                {" / "}
+                                <span className="text-danger">
+                                  {signal.tvSellSignals || 0} 🔴
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

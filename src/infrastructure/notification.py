@@ -35,6 +35,18 @@ class TelegramAdapter(INotifier):
         reward = abs(signal.take_profit - signal.price)
         rr_ratio = reward / risk if risk > 0 else 0
 
+        # TradingView confirmation section
+        tv_section = ""
+        if signal.tv_recommendation:
+            tv_emoji = "✅" if signal.tv_recommendation in ['STRONG_BUY', 'BUY', 'STRONG_SELL', 'SELL'] else "⚠️"
+            tv_section = (
+                f"\n<b>📺 TRADINGVIEW:</b>\n"
+                f"• Recomendación: {tv_emoji} <b>{signal.tv_recommendation}</b>\n"
+                f"• Confianza: {signal.tv_confidence or 'N/A'}\n"
+                f"• Señales Compra: {signal.tv_buy_signals or 0}\n"
+                f"• Señales Venta: {signal.tv_sell_signals or 0}\n"
+            )
+
         # Construct message using HTML for Telegram
         msg = (
             f"<b>{emoji} SEÑAL DE {signal.type} - {signal.symbol.replace('=X', '')}</b>\n\n"
@@ -49,6 +61,7 @@ class TelegramAdapter(INotifier):
             f"<b>📈 CONTEXTO:</b>\n"
             f"• ATR: {signal.atr:.5f}\n"
             f"• RSI: {signal.rsi:.1f}\n"
-            f"• R/R: 1:{rr_ratio:.2f}\n\n"
+            f"• R/R: 1:{rr_ratio:.2f}\n"
+            f"{tv_section}"
         )
         return msg

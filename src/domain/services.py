@@ -4,9 +4,24 @@ from typing import List, Optional, Tuple, Dict
 from datetime import datetime
 from .entities import Signal
 
+# Import TradingView adapter
+try:
+    from src.infrastructure.tradingview_adapter import TradingViewAdapter, TradingViewAnalysis
+    TV_AVAILABLE = True
+except ImportError:
+    TV_AVAILABLE = False
+    TradingViewAdapter = None
+    TradingViewAnalysis = None
+
 class TechnicalAnalysisService:
     def __init__(self, config: Dict):
         self.config = config
+        # Initialize TradingView adapter
+        self.tv_adapter = TradingViewAdapter() if TV_AVAILABLE else None
+        if self.tv_adapter:
+            print("✅ TradingView adapter initialized")
+        else:
+            print("⚠️ TradingView adapter not available")
 
     def calculate_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         """Calculates distinct technical indicators."""
@@ -54,11 +69,24 @@ class TechnicalAnalysisService:
         
         return df
 
+    def get_tradingview_analysis(self, symbol: str) -> Optional[TradingViewAnalysis]:
+        """Get TradingView technical analysis for confirmation"""
+        if not self.tv_adapter:
+            return None
+        
+        interval = self.config.get('DATA_INTERVAL', '1h')
+        return self.tv_adapter.get_analysis(symbol, interval)
+
     def detect_signals(self, symbol: str, df: pd.DataFrame) -> List[Signal]:
-        """Detects trading signals based on calculated indicators."""
+        """Detects trading signals based on calculated indicators + TradingView confirmation."""
         signals = []
         if len(df) < 2:
             return signals
+
+        # Get TradingView analysis for confirmation
+        tv_analysis = self.get_tradingview_analysis(symbol)
+        if tv_analysis:
+            print(f"📊 TradingView {symbol}: {tv_analysis.recommendation} (Buy: {tv_analysis.buy_signals}, Sell: {tv_analysis.sell_signals})")
 
         # Config
         alert_on_rsi = self.config.get('ALERT_ON_RSI', True)
@@ -75,7 +103,8 @@ class TechnicalAnalysisService:
            'atr': float(curr['ATR']) if pd.notna(curr['ATR']) else 0.0,
            'rsi': float(curr['RSI']) if pd.notna(curr['RSI']) else 50.0,
            'macd_hist': float(curr['MACD_Histogram']) if pd.notna(curr['MACD_Histogram']) else 0.0,
-           'time': datetime.now().strftime('%H:%M:%S')
+           'time': datetime.now().strftime('%H:%M:%S'),
+           'tv_analysis': tv_analysis
         }
         
         # Expert Filters State
@@ -86,39 +115,84 @@ class TechnicalAnalysisService:
         trend_bullish = pd.notna(ema_trend) and price > ema_trend
         trend_bearish = pd.notna(ema_trend) and price < ema_trend
 
-        # --- RSI Signals (Standard) ---
+        # --- TradingView-Confirmed Signals (Priority) ---
+        if tv_analysis and tv_analysis.recommendation in ['STRONG_BUY', 'STRONG_SELL']:
+            # Only trigger on strong TradingView recommendations with good consensus
+            confidence = self.tv_adapter.get_signal_confidence(tv_analysis) if self.tv_adapter else 'BAJA'
+            
+            if tv_analysis.recommendation == 'STRONG_BUY' and trend_bullish:
+                signals.append(self._create_signal(
+                    symbol, 'COMPRA', 'TRADINGVIEW PRO',
+                    f"TradingView COMPRA FUERTE ({tv_analysis.buy_signals} indicadores)",
+                    'MUY FUERTE', **common_data
+                ))
+            elif tv_analysis.recommendation == 'STRONG_SELL' and trend_bearish:
+                signals.append(self._create_signal(
+                    symbol, 'VENTA', 'TRADINGVIEW PRO',
+                    f"TradingView VENTA FUERTE ({tv_analysis.sell_signals} indicadores)",
+                    'MUY FUERTE', **common_data
+                ))
+
+        # --- RSI Signals (with TradingView confirmation) ---
         if alert_on_rsi and pd.notna(curr['RSI']) and pd.notna(prev['RSI']):
             if prev['RSI'] < rsi_oversold and curr['RSI'] >= rsi_oversold:
-                signals.append(self._create_signal(symbol, 'COMPRA', 'RSI', f"RSI saliendo de sobreventa ({curr['RSI']:.1f})", 'MODERADA', **common_data))
+                # RSI exit oversold - check TradingView confirms buy
+                tv_confirms = tv_analysis and tv_analysis.recommendation in ['STRONG_BUY', 'BUY']
+                strength = 'FUERTE' if tv_confirms else 'MODERADA'
+                reason = f"RSI saliendo de sobreventa ({curr['RSI']:.1f})"
+                if tv_confirms:
+                    reason += f" + TV: {tv_analysis.recommendation}"
+                signals.append(self._create_signal(symbol, 'COMPRA', 'RSI', reason, strength, **common_data))
+                
             elif prev['RSI'] > rsi_overbought and curr['RSI'] <= rsi_overbought:
-                signals.append(self._create_signal(symbol, 'VENTA', 'RSI', f"RSI saliendo de sobrecompra ({curr['RSI']:.1f})", 'MODERADA', **common_data))
+                tv_confirms = tv_analysis and tv_analysis.recommendation in ['STRONG_SELL', 'SELL']
+                strength = 'FUERTE' if tv_confirms else 'MODERADA'
+                reason = f"RSI saliendo de sobrecompra ({curr['RSI']:.1f})"
+                if tv_confirms:
+                    reason += f" + TV: {tv_analysis.recommendation}"
+                signals.append(self._create_signal(symbol, 'VENTA', 'RSI', reason, strength, **common_data))
 
-        # --- MACD Signals (Standard) ---
+        # --- MACD Signals (with TradingView confirmation) ---
         if alert_on_macd and pd.notna(curr['MACD']) and pd.notna(prev['MACD']):
             if prev['MACD'] <= prev['MACD_Signal'] and curr['MACD'] > curr['MACD_Signal']:
-                signals.append(self._create_signal(symbol, 'COMPRA', 'MACD', "Cruce alcista MACD", 'FUERTE', **common_data))
+                tv_confirms = tv_analysis and tv_analysis.recommendation in ['STRONG_BUY', 'BUY']
+                strength = 'MUY FUERTE' if tv_confirms else 'FUERTE'
+                reason = "Cruce alcista MACD"
+                if tv_confirms:
+                    reason += f" + TV: {tv_analysis.recommendation}"
+                signals.append(self._create_signal(symbol, 'COMPRA', 'MACD', reason, strength, **common_data))
+                
             elif prev['MACD'] >= prev['MACD_Signal'] and curr['MACD'] < curr['MACD_Signal']:
-                signals.append(self._create_signal(symbol, 'VENTA', 'MACD', "Cruce bajista MACD", 'FUERTE', **common_data))
+                tv_confirms = tv_analysis and tv_analysis.recommendation in ['STRONG_SELL', 'SELL']
+                strength = 'MUY FUERTE' if tv_confirms else 'FUERTE'
+                reason = "Cruce bajista MACD"
+                if tv_confirms:
+                    reason += f" + TV: {tv_analysis.recommendation}"
+                signals.append(self._create_signal(symbol, 'VENTA', 'MACD', reason, strength, **common_data))
 
-        # --- Expert EMA Signals (Filtered) ---
+        # --- Expert EMA Signals (Filtered + TradingView) ---
         if alert_on_ma and pd.notna(curr['EMA_Fast']) and pd.notna(prev['EMA_Fast']):
             # Bullish Cross
             if prev['EMA_Fast'] <= prev['EMA_Slow'] and curr['EMA_Fast'] > curr['EMA_Slow']:
-                # Filter 1: Trend (Price > EMA 200)
-                # Filter 2: Strength (RSI > 50)
                 if trend_bullish and rsi > 50:
-                    signals.append(self._create_signal(symbol, 'COMPRA', 'PRO STRATEGY', "Cruce Dorado + Tendencia + RSI > 50", 'MUY FUERTE', **common_data))
+                    tv_confirms = tv_analysis and tv_analysis.recommendation in ['STRONG_BUY', 'BUY']
+                    reason = "Cruce Dorado + Tendencia + RSI > 50"
+                    if tv_confirms:
+                        reason += f" + TV: {tv_analysis.recommendation}"
+                    signals.append(self._create_signal(symbol, 'COMPRA', 'PRO STRATEGY', reason, 'MUY FUERTE', **common_data))
             
             # Bearish Cross
             elif prev['EMA_Fast'] >= prev['EMA_Slow'] and curr['EMA_Fast'] < curr['EMA_Slow']:
-                # Filter 1: Trend (Price < EMA 200)
-                # Filter 2: Strength (RSI < 50)
                 if trend_bearish and rsi < 50:
-                    signals.append(self._create_signal(symbol, 'VENTA', 'PRO STRATEGY', "Cruce Muerte + Tendencia + RSI < 50", 'MUY FUERTE', **common_data))
+                    tv_confirms = tv_analysis and tv_analysis.recommendation in ['STRONG_SELL', 'SELL']
+                    reason = "Cruce Muerte + Tendencia + RSI < 50"
+                    if tv_confirms:
+                        reason += f" + TV: {tv_analysis.recommendation}"
+                    signals.append(self._create_signal(symbol, 'VENTA', 'PRO STRATEGY', reason, 'MUY FUERTE', **common_data))
 
         return signals
 
-    def _create_signal(self, symbol, type, indicator, reason, strength, price, atr, rsi, macd_hist, time):
+    def _create_signal(self, symbol, type, indicator, reason, strength, price, atr, rsi, macd_hist, time, tv_analysis=None):
         sl_mult = self.config.get('STOP_LOSS_ATR_MULTIPLIER', 1.5)
         tp_mult = self.config.get('TAKE_PROFIT_ATR_MULTIPLIER', 2.0)
         expiration = self.config.get('BINARY_EXPIRATION_TIME', "5m")
@@ -133,6 +207,18 @@ class TechnicalAnalysisService:
             sl = price + sl_dist
             tp = price - tp_dist
 
+        # TradingView data
+        tv_recommendation = None
+        tv_confidence = None
+        tv_buy_signals = None
+        tv_sell_signals = None
+        
+        if tv_analysis:
+            tv_recommendation = tv_analysis.recommendation
+            tv_confidence = self.tv_adapter.get_signal_confidence(tv_analysis) if self.tv_adapter else None
+            tv_buy_signals = tv_analysis.buy_signals
+            tv_sell_signals = tv_analysis.sell_signals
+
         return Signal(
             symbol=symbol,
             type=type,
@@ -146,5 +232,10 @@ class TechnicalAnalysisService:
             expiration=expiration,
             atr=atr,
             rsi=rsi,
-            macd_hist=macd_hist
+            macd_hist=macd_hist,
+            tv_recommendation=tv_recommendation,
+            tv_confidence=tv_confidence,
+            tv_buy_signals=tv_buy_signals,
+            tv_sell_signals=tv_sell_signals
         )
+

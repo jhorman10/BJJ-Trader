@@ -27,6 +27,11 @@ class Signal:
     atr: Optional[float] = None
     rsi: Optional[float] = None
     macd_hist: Optional[float] = None
+    # TradingView confirmation
+    tv_recommendation: Optional[str] = None  # STRONG_BUY, BUY, NEUTRAL, SELL, STRONG_SELL
+    tv_confidence: Optional[str] = None  # ALTA, MEDIA, BAJA
+    tv_buy_signals: Optional[int] = None
+    tv_sell_signals: Optional[int] = None
 
 @dataclass
 class AnalysisResult:

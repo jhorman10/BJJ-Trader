@@ -22,6 +22,11 @@ export interface Signal {
   atr?: number | null;
   rsi?: number | null;
   macd_hist?: number | null;
+  // TradingView confirmation
+  tvRecommendation?: string | null;
+  tvConfidence?: string | null;
+  tvBuySignals?: number | null;
+  tvSellSignals?: number | null;
 }
 
 export interface MarketData {

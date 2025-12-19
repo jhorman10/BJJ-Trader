@@ -47,3 +47,8 @@ python-dotenv>=1.0.0
 
 # CORS Support
 flask-cors>=4.0.0
+
+# ===========================================
+# TradingView Technical Analysis
+# ===========================================
+tradingview-ta>=3.3.0
