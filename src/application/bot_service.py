@@ -5,6 +5,14 @@ from src.domain.interfaces import INotifier
 from src.application.services import TradingOrchestrator
 from src.infrastructure.config import Config
 
+# Use eventlet for cooperative sleeping (non-blocking)
+try:
+    import eventlet
+    eventlet.monkey_patch(time=True)
+    sleep = eventlet.sleep
+except ImportError:
+    sleep = time.sleep
+
 class SignalBotService:
     def __init__(self, orchestrator: TradingOrchestrator, config: Config):
         self.orchestrator = orchestrator
@@ -74,7 +82,7 @@ class SignalBotService:
                     print(f"Error in Bot Service for {symbol}: {e}")
                 
                 # Small yield for CPU (increased to help with TradingView rate limiting)
-                time.sleep(2)
+                sleep(2)  # eventlet-compatible sleep
 
             # Cycle delay
-            time.sleep(30)
+            sleep(30)  # eventlet-compatible sleep

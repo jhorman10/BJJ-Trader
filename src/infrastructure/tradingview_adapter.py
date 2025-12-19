@@ -5,8 +5,17 @@ Fetches real-time recommendations from TradingView for enhanced signal generatio
 from typing import Dict, Optional
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-import time
-import threading
+
+# Use eventlet for cooperative sleeping (non-blocking)
+try:
+    import eventlet
+    eventlet.monkey_patch(time=True)  # Make time.sleep() cooperative
+    sleep = eventlet.sleep
+except ImportError:
+    import time
+    sleep = time.sleep
+
+import time  # For time.time() timestamps only
 
 try:
     from tradingview_ta import TA_Handler, Interval, Exchange
@@ -100,7 +109,6 @@ class TradingViewAdapter:
         self.enabled = TRADINGVIEW_AVAILABLE
         self._cache: Dict[str, tuple] = {}  # {cache_key: (result, timestamp)}
         self._last_request_time = 0.0
-        self._lock = threading.Lock()
         self._rate_limited_until = 0.0  # Timestamp until which we're rate limited
     
     def _get_cache_key(self, symbol: str, interval: str) -> str:
@@ -127,24 +135,23 @@ class TradingViewAdapter:
         self._cache[cache_key] = (result, datetime.now())
     
     def _wait_for_rate_limit(self):
-        """Wait if necessary to respect rate limiting"""
-        with self._lock:
+        """Wait if necessary to respect rate limiting (eventlet-compatible)"""
+        now = time.time()
+        
+        # Check if we're in a rate-limited state (from previous 429)
+        if now < self._rate_limited_until:
+            wait_time = self._rate_limited_until - now
+            print(f"⏳ TradingView rate limited, waiting {wait_time:.1f}s...")
+            sleep(wait_time)  # eventlet-compatible sleep
             now = time.time()
-            
-            # Check if we're in a rate-limited state (from previous 429)
-            if now < self._rate_limited_until:
-                wait_time = self._rate_limited_until - now
-                print(f"⏳ TradingView rate limited, waiting {wait_time:.1f}s...")
-                time.sleep(wait_time)
-                now = time.time()
-            
-            # Respect minimum interval between requests
-            time_since_last = now - self._last_request_time
-            if time_since_last < self.MIN_REQUEST_INTERVAL:
-                wait_time = self.MIN_REQUEST_INTERVAL - time_since_last
-                time.sleep(wait_time)
-            
-            self._last_request_time = time.time()
+        
+        # Respect minimum interval between requests
+        time_since_last = now - self._last_request_time
+        if time_since_last < self.MIN_REQUEST_INTERVAL:
+            wait_time = self.MIN_REQUEST_INTERVAL - time_since_last
+            sleep(wait_time)  # eventlet-compatible sleep
+        
+        self._last_request_time = time.time()
     
     def _fetch_with_retry(self, yahoo_symbol: str, tv_symbol: str, screener: str, 
                           exchange: str, tv_interval) -> Optional[TradingViewAnalysis]:
@@ -206,9 +213,8 @@ class TradingViewAdapter:
                     if attempt < self.MAX_RETRIES - 1:
                         print(f"⏳ TradingView 429 for {yahoo_symbol}, backing off {backoff:.0f}s (attempt {attempt + 1}/{self.MAX_RETRIES})")
                         # Set global rate limit to prevent other requests
-                        with self._lock:
-                            self._rate_limited_until = time.time() + backoff
-                        time.sleep(backoff)
+                        self._rate_limited_until = time.time() + backoff
+                        sleep(backoff)  # eventlet-compatible sleep
                         backoff *= 2  # Exponential backoff
                         continue
                     else:
