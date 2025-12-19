@@ -4,6 +4,9 @@ Fetches real-time recommendations from TradingView for enhanced signal generatio
 """
 from typing import Dict, Optional
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+import time
+import threading
 
 try:
     from tradingview_ta import TA_Handler, Interval, Exchange
@@ -85,14 +88,142 @@ INTERVAL_MAPPING = {
 
 
 class TradingViewAdapter:
-    """Adapter for fetching TradingView technical analysis"""
+    """Adapter for fetching TradingView technical analysis with rate limiting and caching"""
+    
+    # Rate limiting settings
+    MIN_REQUEST_INTERVAL = 3.0  # Minimum seconds between API calls
+    CACHE_TTL_SECONDS = 300  # Cache results for 5 minutes
+    MAX_RETRIES = 3
+    INITIAL_BACKOFF = 5.0  # Initial backoff in seconds for 429 errors
     
     def __init__(self):
         self.enabled = TRADINGVIEW_AVAILABLE
+        self._cache: Dict[str, tuple] = {}  # {cache_key: (result, timestamp)}
+        self._last_request_time = 0.0
+        self._lock = threading.Lock()
+        self._rate_limited_until = 0.0  # Timestamp until which we're rate limited
+    
+    def _get_cache_key(self, symbol: str, interval: str) -> str:
+        """Generate a unique cache key for symbol-interval combination"""
+        return f"{symbol}_{interval}"
+    
+    def _is_cache_valid(self, cache_key: str) -> bool:
+        """Check if cached result is still valid"""
+        if cache_key not in self._cache:
+            return False
+        _, timestamp = self._cache[cache_key]
+        age = (datetime.now() - timestamp).total_seconds()
+        return age < self.CACHE_TTL_SECONDS
+    
+    def _get_from_cache(self, cache_key: str) -> Optional[TradingViewAnalysis]:
+        """Get cached result if valid"""
+        if self._is_cache_valid(cache_key):
+            result, _ = self._cache[cache_key]
+            return result
+        return None
+    
+    def _store_in_cache(self, cache_key: str, result: Optional[TradingViewAnalysis]):
+        """Store result in cache"""
+        self._cache[cache_key] = (result, datetime.now())
+    
+    def _wait_for_rate_limit(self):
+        """Wait if necessary to respect rate limiting"""
+        with self._lock:
+            now = time.time()
+            
+            # Check if we're in a rate-limited state (from previous 429)
+            if now < self._rate_limited_until:
+                wait_time = self._rate_limited_until - now
+                print(f"⏳ TradingView rate limited, waiting {wait_time:.1f}s...")
+                time.sleep(wait_time)
+                now = time.time()
+            
+            # Respect minimum interval between requests
+            time_since_last = now - self._last_request_time
+            if time_since_last < self.MIN_REQUEST_INTERVAL:
+                wait_time = self.MIN_REQUEST_INTERVAL - time_since_last
+                time.sleep(wait_time)
+            
+            self._last_request_time = time.time()
+    
+    def _fetch_with_retry(self, yahoo_symbol: str, tv_symbol: str, screener: str, 
+                          exchange: str, tv_interval) -> Optional[TradingViewAnalysis]:
+        """Fetch analysis with retry logic and exponential backoff"""
+        backoff = self.INITIAL_BACKOFF
+        
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                handler = TA_Handler(
+                    symbol=tv_symbol,
+                    screener=screener,
+                    exchange=exchange,
+                    interval=tv_interval
+                )
+                
+                analysis = handler.get_analysis()
+                
+                # Extract summary
+                summary = analysis.summary
+                oscillators = analysis.oscillators
+                moving_averages = analysis.moving_averages
+                indicators = analysis.indicators
+                
+                return TradingViewAnalysis(
+                    symbol=yahoo_symbol,
+                    recommendation=summary.get('RECOMMENDATION', 'NEUTRAL'),
+                    buy_signals=summary.get('BUY', 0),
+                    sell_signals=summary.get('SELL', 0),
+                    neutral_signals=summary.get('NEUTRAL', 0),
+                    
+                    oscillators_recommendation=oscillators.get('RECOMMENDATION', 'NEUTRAL'),
+                    oscillators_buy=oscillators.get('BUY', 0),
+                    oscillators_sell=oscillators.get('SELL', 0),
+                    oscillators_neutral=oscillators.get('NEUTRAL', 0),
+                    
+                    ma_recommendation=moving_averages.get('RECOMMENDATION', 'NEUTRAL'),
+                    ma_buy=moving_averages.get('BUY', 0),
+                    ma_sell=moving_averages.get('SELL', 0),
+                    ma_neutral=moving_averages.get('NEUTRAL', 0),
+                    
+                    # Key indicators
+                    rsi=indicators.get('RSI'),
+                    macd=indicators.get('MACD.macd'),
+                    macd_signal=indicators.get('MACD.signal'),
+                    ema_20=indicators.get('EMA20'),
+                    sma_50=indicators.get('SMA50'),
+                    sma_200=indicators.get('SMA200'),
+                    adx=indicators.get('ADX'),
+                    cci=indicators.get('CCI20'),
+                    stoch_k=indicators.get('Stoch.K'),
+                    stoch_d=indicators.get('Stoch.D'),
+                )
+                
+            except Exception as e:
+                error_str = str(e)
+                
+                # Check for rate limiting (429 error)
+                if "429" in error_str:
+                    if attempt < self.MAX_RETRIES - 1:
+                        print(f"⏳ TradingView 429 for {yahoo_symbol}, backing off {backoff:.0f}s (attempt {attempt + 1}/{self.MAX_RETRIES})")
+                        # Set global rate limit to prevent other requests
+                        with self._lock:
+                            self._rate_limited_until = time.time() + backoff
+                        time.sleep(backoff)
+                        backoff *= 2  # Exponential backoff
+                        continue
+                    else:
+                        print(f"⚠️ TradingView rate limit exceeded for {yahoo_symbol} after {self.MAX_RETRIES} retries")
+                        return None
+                else:
+                    # Non-rate-limit error, don't retry
+                    print(f"⚠️ TradingView analysis failed for {yahoo_symbol}: {e}")
+                    return None
+        
+        return None
     
     def get_analysis(self, yahoo_symbol: str, interval: str = "1h") -> Optional[TradingViewAnalysis]:
         """
-        Get TradingView technical analysis for a symbol
+        Get TradingView technical analysis for a symbol with caching and rate limiting
         
         Args:
             yahoo_symbol: Symbol in Yahoo Finance format (e.g., "EURUSD=X")
@@ -104,6 +235,12 @@ class TradingViewAdapter:
         if not self.enabled:
             return None
         
+        # Check cache first
+        cache_key = self._get_cache_key(yahoo_symbol, interval)
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            return cached_result
+        
         # Map Yahoo symbol to TradingView format
         if yahoo_symbol not in SYMBOL_MAPPING:
             print(f"⚠️ Symbol {yahoo_symbol} not mapped for TradingView")
@@ -112,55 +249,16 @@ class TradingViewAdapter:
         tv_symbol, screener, exchange = SYMBOL_MAPPING[yahoo_symbol]
         tv_interval = INTERVAL_MAPPING.get(interval, Interval.INTERVAL_1_HOUR)
         
-        try:
-            handler = TA_Handler(
-                symbol=tv_symbol,
-                screener=screener,
-                exchange=exchange,
-                interval=tv_interval
-            )
-            
-            analysis = handler.get_analysis()
-            
-            # Extract summary
-            summary = analysis.summary
-            oscillators = analysis.oscillators
-            moving_averages = analysis.moving_averages
-            indicators = analysis.indicators
-            
-            return TradingViewAnalysis(
-                symbol=yahoo_symbol,
-                recommendation=summary.get('RECOMMENDATION', 'NEUTRAL'),
-                buy_signals=summary.get('BUY', 0),
-                sell_signals=summary.get('SELL', 0),
-                neutral_signals=summary.get('NEUTRAL', 0),
-                
-                oscillators_recommendation=oscillators.get('RECOMMENDATION', 'NEUTRAL'),
-                oscillators_buy=oscillators.get('BUY', 0),
-                oscillators_sell=oscillators.get('SELL', 0),
-                oscillators_neutral=oscillators.get('NEUTRAL', 0),
-                
-                ma_recommendation=moving_averages.get('RECOMMENDATION', 'NEUTRAL'),
-                ma_buy=moving_averages.get('BUY', 0),
-                ma_sell=moving_averages.get('SELL', 0),
-                ma_neutral=moving_averages.get('NEUTRAL', 0),
-                
-                # Key indicators
-                rsi=indicators.get('RSI'),
-                macd=indicators.get('MACD.macd'),
-                macd_signal=indicators.get('MACD.signal'),
-                ema_20=indicators.get('EMA20'),
-                sma_50=indicators.get('SMA50'),
-                sma_200=indicators.get('SMA200'),
-                adx=indicators.get('ADX'),
-                cci=indicators.get('CCI20'),
-                stoch_k=indicators.get('Stoch.K'),
-                stoch_d=indicators.get('Stoch.D'),
-            )
-            
-        except Exception as e:
-            print(f"⚠️ TradingView analysis failed for {yahoo_symbol}: {e}")
-            return None
+        # Wait for rate limit
+        self._wait_for_rate_limit()
+        
+        # Fetch with retry logic
+        result = self._fetch_with_retry(yahoo_symbol, tv_symbol, screener, exchange, tv_interval)
+        
+        # Store in cache (even None results to avoid hammering the API)
+        self._store_in_cache(cache_key, result)
+        
+        return result
     
     def is_strong_signal(self, analysis: TradingViewAnalysis, signal_type: str) -> bool:
         """

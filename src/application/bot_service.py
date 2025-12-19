@@ -73,8 +73,8 @@ class SignalBotService:
                 except Exception as e:
                     print(f"Error in Bot Service for {symbol}: {e}")
                 
-                # Small yield for CPU
-                time.sleep(0.1)
+                # Small yield for CPU (increased to help with TradingView rate limiting)
+                time.sleep(2)
 
             # Cycle delay
-            time.sleep(10)
+            time.sleep(30)
