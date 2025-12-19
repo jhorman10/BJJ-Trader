@@ -109,7 +109,7 @@ export const Dashboard = () => {
             </div>
 
             <a
-              href="https://t.me/BJJTraderAlertas"
+              href="https://t.me/+ET239uZ0NGhhOTRh"
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-sm btn-outline-primary rounded-circle"
