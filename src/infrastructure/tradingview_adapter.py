@@ -1,28 +1,34 @@
 """
 TradingView Technical Analysis Adapter
 Fetches real-time recommendations from TradingView for enhanced signal generation
+
+NOTE: TradingView integration is TEMPORARILY DISABLED because the tradingview-ta
+library uses blocking HTTP requests that are incompatible with eventlet's 
+cooperative threading (causes "do not call blocking functions from the mainloop" error).
+
+The application will continue to work using local technical analysis (RSI, MACD, EMA)
+without TradingView confirmation signals.
+
+TODO: To re-enable, consider:
+1. Running TradingView calls in a separate process/thread pool
+2. Using gevent instead of eventlet
+3. Creating an async TradingView client
 """
 from typing import Dict, Optional
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import time
 
-# Use eventlet for cooperative sleeping (non-blocking)
-try:
-    import eventlet
-    eventlet.monkey_patch(time=True)  # Make time.sleep() cooperative
-    sleep = eventlet.sleep
-except ImportError:
-    import time
-    sleep = time.sleep
+# TEMPORARILY DISABLED - causes eventlet blocking errors
+# try:
+#     from tradingview_ta import TA_Handler, Interval, Exchange
+#     TRADINGVIEW_AVAILABLE = True
+# except ImportError:
+#     TRADINGVIEW_AVAILABLE = False
+#     print("⚠️ tradingview-ta not installed. TradingView integration disabled.")
 
-import time  # For time.time() timestamps only
-
-try:
-    from tradingview_ta import TA_Handler, Interval, Exchange
-    TRADINGVIEW_AVAILABLE = True
-except ImportError:
-    TRADINGVIEW_AVAILABLE = False
-    print("⚠️ tradingview-ta not installed. TradingView integration disabled.")
+TRADINGVIEW_AVAILABLE = False
+print("⚠️ TradingView integration temporarily disabled (incompatible with eventlet)")
 
 
 @dataclass
