@@ -32,7 +32,6 @@ export const Dashboard = () => {
   const symbols = [
     "AUDJPY=X",
     "AUDUSD=X",
-    "BTC-USD",
     "EURAUD=X",
     "EURCHF=X",
     "EURGBP=X",
@@ -42,7 +41,6 @@ export const Dashboard = () => {
     "GBPCHF=X",
     "GBPJPY=X",
     "GBPUSD=X",
-    "GC=F",
     "NZDUSD=X",
     "USDCAD=X",
     "USDCHF=X",

@@ -14,8 +14,6 @@ class Config:
         "AUDUSD=X", "USDCAD=X", "NZDUSD=X",
         "EURGBP=X", "EURJPY=X", "GBPJPY=X", "AUDJPY=X",
         "EURAUD=X", "EURCHF=X", "GBPCHF=X",
-        "GC=F", # Gold Futures
-        "BTC-USD" # Crypto
     ]
     
     # Data Settings

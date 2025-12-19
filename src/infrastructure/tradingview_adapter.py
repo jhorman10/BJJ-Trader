@@ -82,10 +82,6 @@ SYMBOL_MAPPING = {
     "EURAUD=X": ("EURAUD", "forex", "FX_IDC"),
     "EURCHF=X": ("EURCHF", "forex", "FX_IDC"),
     "GBPCHF=X": ("GBPCHF", "forex", "FX_IDC"),
-    # Commodities
-    "GC=F": ("GOLD", "cfd", "TVC"),
-    # Crypto
-    "BTC-USD": ("BTCUSD", "crypto", "BITSTAMP"),
 }
 
 # Interval mapping
