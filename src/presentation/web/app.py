@@ -91,6 +91,22 @@ bot_service.start()
 def home():
     return jsonify({"status": "healthy", "service": "BJJ Trader API"})
 
+@app.route('/health')
+def health_check():
+    """
+    Health check endpoint for uptime monitoring services (UptimeRobot, etc.)
+    Returns detailed bot status to confirm 24/7 operation
+    """
+    from datetime import datetime
+    return jsonify({
+        "status": "healthy",
+        "service": "BJJ Trader API",
+        "bot_running": bot_service.running,
+        "symbols_monitored": len(config.SYMBOLS),
+        "telegram_enabled": config.TELEGRAM_ENABLED,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "uptime_check": "ok"
+    })
 
 
 @socketio.on('connect')
