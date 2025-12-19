@@ -76,6 +76,11 @@ bot_service.register_on_signal(on_new_signal)
 bot_service.register_on_price(on_price_update)
 bot_service.register_on_indicator(on_indicators_update)
 
+# Start Bot Service on module load (works with Gunicorn)
+# This ensures the bot runs in production, not just when running directly
+print("🚀 Starting Bot Service on module load...")
+bot_service.start()
+
 # Routes
 @app.route('/')
 def home():
