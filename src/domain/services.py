@@ -22,6 +22,9 @@ class TechnicalAnalysisService:
             print("✅ TradingView adapter initialized")
         else:
             print("⚠️ TradingView adapter not available")
+        
+        # Signal cooldown tracking: {symbol: last_signal_timestamp}
+        self._signal_cooldowns: Dict[str, datetime] = {}
 
     def calculate_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         """Calculates distinct technical indicators."""
@@ -82,12 +85,31 @@ class TechnicalAnalysisService:
         signals = []
         if len(df) < 2:
             return signals
+        
+        curr = df.iloc[-1]
+        
+        # === Signal Quality Filters ===
+        # 1. ATR Filter: Skip low volatility periods
+        min_atr = self.config.get('MIN_ATR_THRESHOLD', 0.0005)
+        atr = curr.get('ATR', None)
+        if pd.notna(atr) and atr < min_atr:
+            print(f"⏭️ {symbol}: ATR {atr:.6f} < {min_atr} - skipping (low volatility)")
+            return signals
+        
+        # 2. Cooldown Filter: Avoid signal spam for same symbol
+        cooldown_secs = self.config.get('SIGNAL_COOLDOWN_SECONDS', 300)
+        now = datetime.now()
+        if symbol in self._signal_cooldowns:
+            last_signal = self._signal_cooldowns[symbol]
+            elapsed = (now - last_signal).total_seconds()
+            if elapsed < cooldown_secs:
+                print(f"⏭️ {symbol}: Cooldown active ({int(cooldown_secs - elapsed)}s remaining)")
+                return signals
 
         # Get TradingView analysis for confirmation
         tv_analysis = self.get_tradingview_analysis(symbol)
         if tv_analysis:
             print(f"📊 TradingView {symbol}: {tv_analysis.recommendation} (Buy: {tv_analysis.buy_signals}, Sell: {tv_analysis.sell_signals})")
-
         # Config
         alert_on_rsi = self.config.get('ALERT_ON_RSI', True)
         alert_on_macd = self.config.get('ALERT_ON_MACD_CROSS', True)
@@ -189,6 +211,11 @@ class TechnicalAnalysisService:
                     if tv_confirms:
                         reason += f" + TV: {tv_analysis.recommendation}"
                     signals.append(self._create_signal(symbol, 'VENTA', 'PRO STRATEGY', reason, 'MUY FUERTE', **common_data))
+
+        # Update cooldown if any signals were generated
+        if signals:
+            self._signal_cooldowns[symbol] = datetime.now()
+            print(f"⏱️ {symbol}: Cooldown set for {self.config.get('SIGNAL_COOLDOWN_SECONDS', 300)}s")
 
         return signals
 

@@ -1,15 +1,24 @@
 import { io, Socket } from "socket.io-client";
 import type { IMarketStream } from "../../application/ports/IMarketStream";
 import type { Signal, Indicators, ChartDataPoint } from "../../domain/models";
+import { throttle } from "../utils/throttle";
 
 // Backend URL from environment variable (set in .env or Render dashboard)
 // In production: VITE_BACKEND_URL should be set to the backend service URL
 // In development: defaults to localhost:8888
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8888";
 
+// Throttle intervals for performance optimization
+const PRICE_UPDATE_THROTTLE_MS = 500; // Max 2 price updates per second
+const INDICATORS_THROTTLE_MS = 1000; // Max 1 indicator update per second
+
 export class SocketService implements IMarketStream {
   private socket: Socket | null = null;
   private static instance: SocketService;
+
+  // Store throttled callbacks to maintain references
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private throttledCallbacks: Map<string, (...args: any[]) => void> = new Map();
 
   // Singleton pattern to share connection
   public static getInstance(): SocketService {
@@ -42,6 +51,7 @@ export class SocketService implements IMarketStream {
       this.socket.disconnect();
       this.socket = null;
     }
+    this.throttledCallbacks.clear();
   }
 
   requestData(symbol: string): void {
@@ -66,9 +76,13 @@ export class SocketService implements IMarketStream {
   }
 
   onPriceUpdate(callback: (price: number) => void): void {
-    this.socket?.on("price_update", (data: { price: number }) => {
+    // Throttle price updates to reduce re-renders
+    const throttledCallback = throttle((data: { price: number }) => {
       callback(data.price);
-    });
+    }, PRICE_UPDATE_THROTTLE_MS);
+
+    this.throttledCallbacks.set("price_update", throttledCallback);
+    this.socket?.on("price_update", throttledCallback);
   }
 
   onChartData(callback: (data: ChartDataPoint[]) => void): void {
@@ -79,15 +93,20 @@ export class SocketService implements IMarketStream {
   }
 
   onNewAlert(callback: (signal: Signal) => void): void {
+    // Alerts are not throttled - they're already sampled on backend
     this.socket?.on("new_alert", (signal: Signal) => {
       callback(signal);
     });
   }
 
   onIndicators(callback: (data: Indicators) => void): void {
-    this.socket?.on("indicators", (data: Indicators) => {
+    // Throttle indicator updates to reduce re-renders
+    const throttledCallback = throttle((data: Indicators) => {
       callback(data);
-    });
+    }, INDICATORS_THROTTLE_MS);
+
+    this.throttledCallbacks.set("indicators", throttledCallback);
+    this.socket?.on("indicators", throttledCallback);
   }
 
   // Cleanup listeners to prevent duplicates if useful
@@ -100,5 +119,6 @@ export class SocketService implements IMarketStream {
       this.socket.off("new_alert");
       this.socket.off("indicators");
     }
+    this.throttledCallbacks.clear();
   }
 }

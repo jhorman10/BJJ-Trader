@@ -109,6 +109,19 @@ def health_check():
     })
 
 
+@app.route('/metrics')
+def metrics():
+    """
+    Performance metrics endpoint for monitoring system resources
+    Returns CPU, memory usage, and API response time statistics
+    """
+    from src.infrastructure.monitoring import monitor
+    stats = monitor.get_system_stats()
+    stats['bot_running'] = bot_service.running
+    stats['signal_counter'] = bot_service._signal_counter
+    return jsonify(stats)
+
+
 @socketio.on('connect')
 def handle_connect():
     print(f"✅ Client connected: {request.sid}")

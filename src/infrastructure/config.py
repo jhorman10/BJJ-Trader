@@ -22,8 +22,8 @@ class Config:
     
     # Technical Indicators
     RSI_PERIOD = 14
-    RSI_OVERSOLD = 30
-    RSI_OVERBOUGHT = 70
+    RSI_OVERSOLD = 25   # More selective (was 30) - reduces false signals
+    RSI_OVERBOUGHT = 75  # More selective (was 70) - reduces false signals
     
     MACD_FAST = 12
     MACD_SLOW = 26
@@ -36,6 +36,10 @@ class Config:
     EMA_TREND = 200
     
     ATR_PERIOD = 14
+    
+    # Signal Quality Filters (new)
+    MIN_ATR_THRESHOLD = 0.0005  # Filter low volatility noise
+    SIGNAL_COOLDOWN_SECONDS = 300  # 5 min between same-symbol signals
     
     # Binary Options
     BINARY_EXPIRATION_TIME = "5m"

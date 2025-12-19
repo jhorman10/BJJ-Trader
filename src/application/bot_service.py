@@ -14,6 +14,11 @@ class SignalBotService:
         self._on_signal_callbacks: List[Callable] = []
         self._on_price_callbacks: List[Callable] = []
         self._on_indicator_callbacks: List[Callable] = []
+        
+        # Signal sampling: only emit 1 of every N signals to WebSocket
+        # This reduces frontend load while still sending ALL signals to Telegram
+        self._signal_counter = 0
+        self._signal_sample_rate = 10  # 1 in 10 signals emitted to UI
 
     def start(self):
         if self.running:
@@ -52,13 +57,20 @@ class SignalBotService:
 
                     # 2. Emit Real-time Events (Application -> Presentation via callbacks)
                     
-                    # Signals
+                    # Signals (sampled for WebSocket, all go to Telegram via orchestrator)
                     if result.signals:
                         print(f"📢 Bot Service found {len(result.signals)} signals for {symbol}")
                     for signal in result.signals:
-                        print(f"  ➡️ Calling {len(self._on_signal_callbacks)} signal callbacks for {signal.symbol} {signal.type}")
-                        for cb in self._on_signal_callbacks:
-                            cb(signal)
+                        # Increment counter for each signal
+                        self._signal_counter += 1
+                        
+                        # Only emit to WebSocket every Nth signal
+                        if self._signal_counter % self._signal_sample_rate == 0:
+                            print(f"  ➡️ Emitting signal {self._signal_counter} to WebSocket: {signal.symbol} {signal.type}")
+                            for cb in self._on_signal_callbacks:
+                                cb(signal)
+                        else:
+                            print(f"  ⏭️ Skipping WebSocket emit for signal {self._signal_counter} (sampled)")
                     
                     # Price Update
                     if result.current_price > 0:
