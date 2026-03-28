@@ -27,3 +27,9 @@ Thumbs.db
 
 # Cache
 .cache/
+
+# Claude
+.claude/
+
+# GitHub
+.github/
